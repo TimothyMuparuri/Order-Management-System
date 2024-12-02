@@ -1,32 +1,38 @@
 package za.co.nharire.order_ms.model.order;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.apache.james.mime4j.dom.datetime.DateTime;
-import org.apache.poi.hpsf.Decimal;
+
+import java.time.LocalDateTime;
 
 @Data
-@Builder
-@RequiredArgsConstructor
 @Entity
-@Table(name = "order")
+@Table(name = "_order")
 
 public class Order {
 
     @Id
+    @Column(name = "orderId")
     private Integer orderId;
+    @Column(name = "userId")
     private Integer userId;
+    @Column(name = "productDetails")
     private String productDetails;
+    @Column(name = "orderStatus")
     private String orderStatus;
+    @Column(name = "depositPaid")
     private Boolean depositPaid;
-    private Decimal depositAmount;
-    private Decimal remainingBalance;
+    @Column(name = "depositAmount")
+    private Double depositAmount;
+    @Column(name = "remainingBalance")
+    private Double remainingBalance;
+    @Column(name = "paymentProof")
     private String paymentProof;
-    private DateTime orderDate;
+    @Column(name = "orderDate")
+    private LocalDateTime orderDate;
 
 
 }

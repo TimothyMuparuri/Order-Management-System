@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public class OrderStatusService {
 
-    private OrderStatusRepository orderStatusRepository;
+    private final OrderStatusRepository orderStatusRepository;
 
     public OrderStatusDTO saveOrderStatus(OrderStatusDTO orderStatusDTO) {
 

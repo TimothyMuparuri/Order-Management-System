@@ -20,7 +20,7 @@ import java.util.Optional;
 
 public class OrderService {
 
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     public OrderDTO saveOrder(OrderDTO orderDTO) {
 

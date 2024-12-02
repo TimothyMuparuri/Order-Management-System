@@ -19,7 +19,7 @@ import java.util.List;
 
 public class ProductController {
 
-    private ProductService productService;
+    private final ProductService productService;
 
     @PostMapping("product/save")
     public ResponseEntity<ProductDTO> saveProducts(@RequestBody ProductDTO productDTO) {
@@ -34,7 +34,7 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/order/all")
+    @GetMapping("/product/all")
     public ResponseEntity<List<ProductDTO>> getAllProducts() {
         log.info("GETTING ALL PRODUCT IN DB ");
 

@@ -17,7 +17,7 @@ import java.util.List;
 
 public class ProductService {
 
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
     public ProductDTO saveProduct(ProductDTO productDTO) {
 

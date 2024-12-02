@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public class PaymentProofService {
 
-    private PaymentProofRepository paymentProofRepository;
+    private final PaymentProofRepository paymentProofRepository;
 
     public PaymentDTO savePaymentProof(PaymentDTO paymentDTO) {
 

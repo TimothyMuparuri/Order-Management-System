@@ -14,7 +14,7 @@ import za.co.nharire.order_ms.service.InvoiceService;
 
 public class InvoiceController {
 
-    private InvoiceService invoiceService;
+    private final InvoiceService invoiceService;
 
     @PostMapping("invoice/save")
     public ResponseEntity<InvoiceDTO> saveInvoice(@RequestBody InvoiceDTO invoiceDTO) {

@@ -16,7 +16,7 @@ import java.util.Optional;
 
 public class InvoiceService {
 
-    private InvoiceRepository invoiceRepository;
+    private  final InvoiceRepository invoiceRepository;
 
     public InvoiceDTO saveInvoice(InvoiceDTO invoiceDTO) {
 

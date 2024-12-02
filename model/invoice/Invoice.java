@@ -1,28 +1,33 @@
 package za.co.nharire.order_ms.model.invoice;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.apache.james.mime4j.dom.datetime.DateTime;
 import org.apache.poi.hpsf.Decimal;
 
+import java.time.LocalDateTime;
+
 @Data
-@Builder
-@RequiredArgsConstructor
 @Entity
 @Table(name = "invoice")
 
 public class Invoice {
 
     @Id
+    @Column(name= "invoiceId")
     private Integer invoiceId;
+    @Column(name= "orderId")
     private Integer orderId;
-    private DateTime invoiceDate;
-    private Decimal totalAmount;
-    private Decimal paidAmount;
-    private Decimal remainingBalance;
+    @Column(name= "invoiceDate")
+    private LocalDateTime invoiceDate;
+    @Column(name= "totalAmount")
+    private Double totalAmount;
+    @Column(name= "paidAmount")
+    private Double paidAmount;
+    @Column(name= "rremainingBalance")
+    private Double remainingBalance;
+    @Column(name= "invoicePdfUrl")
     private String invoicePdfUrl;
 }

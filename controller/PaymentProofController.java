@@ -16,7 +16,7 @@ import java.util.List;
 
 public class PaymentProofController {
 
-    private PaymentProofService paymentProofService;
+    private final PaymentProofService paymentProofService;
 
     @PostMapping("payment/save")
     public ResponseEntity<PaymentDTO> savePaymentProof(@RequestBody PaymentDTO paymentDTO) {

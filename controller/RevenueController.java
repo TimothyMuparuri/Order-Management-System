@@ -19,7 +19,7 @@ import java.util.List;
 
 public class RevenueController {
 
-    private RevenueService revenueService;
+    private final RevenueService revenueService;
 
     @PostMapping("revenue/save")
     public ResponseEntity<RevenueDTO> saveRevenue(@RequestBody RevenueDTO revenueDTO) {

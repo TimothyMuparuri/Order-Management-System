@@ -18,7 +18,7 @@ import java.util.List;
 
 public class OrderController {
 
-    private OrderService orderService;
+    private final OrderService orderService;
 
     @PostMapping("order/save")
     public ResponseEntity<OrderDTO> saveOrder(@RequestBody OrderDTO orderDTO) {

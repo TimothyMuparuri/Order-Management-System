@@ -17,7 +17,7 @@ import java.util.List;
 
 public class RevenueService {
 
-    private RevenueRepository revenueRepository;
+    private final RevenueRepository revenueRepository;
 
     public RevenueDTO saveRevenue(RevenueDTO revenueDTO) {
 
