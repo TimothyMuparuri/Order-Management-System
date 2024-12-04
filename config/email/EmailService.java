@@ -14,7 +14,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-// Annotation
 @Service
 @RequiredArgsConstructor
 
@@ -25,7 +24,6 @@ public class  EmailService implements EmailRepository{
     @Value("${spring.mail.username}")
     private String sender;
 
-    // Method 1
     // To send a simple email
     public String sendSimpleMail(EmailDetails details)
     {
@@ -41,7 +39,6 @@ public class  EmailService implements EmailRepository{
             mailMessage.setText(details.getMsgBody());
             mailMessage.setSubject(details.getSubject());
 
-            // Sending the mail
             javaMailSender.send(mailMessage);
             return "Mail Sent Successfully...";
         }
@@ -52,7 +49,6 @@ public class  EmailService implements EmailRepository{
         }
     }
 
-    // Method 2
     // To send an email with attachment
     public String
     sendMailWithAttachment(EmailDetails details)
@@ -83,10 +79,8 @@ public class  EmailService implements EmailRepository{
             return "Mail sent Successfully";
         }
 
-        // Catch block to handle MessagingException
         catch (MessagingException e) {
 
-            // Display message when exception occurred
             return "Error while sending mail!!!";
         }
     }
