@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.co.nharire.order_ms.config.email.EmailDetails;
 import za.co.nharire.order_ms.constants.ApiConstants;
 import za.co.nharire.order_ms.model.delete.DeleteDTO;
 import za.co.nharire.order_ms.model.order.OrderDTO;
@@ -21,11 +22,11 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("order/save")
-    public ResponseEntity<OrderDTO> saveOrder(@RequestBody OrderDTO orderDTO) {
+    public ResponseEntity<OrderDTO> saveOrder(@RequestBody OrderDTO orderDTO, EmailDetails emailDetails) {
 
         log.info("SAVING ORDER", orderDTO.toString());
 
-        OrderDTO orderDTO1 = orderService.saveOrder(orderDTO);
+        OrderDTO orderDTO1 = orderService.saveOrder(orderDTO,emailDetails);
         if (orderDTO1 != null) {
             return new ResponseEntity<>(orderDTO1, HttpStatus.OK);
         } else {

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import za.co.nharire.order_ms.config.email.EmailDetails;
+import za.co.nharire.order_ms.config.email.EmailService;
 import za.co.nharire.order_ms.model.payment.PaymentDTO;
 import za.co.nharire.order_ms.model.payment.PaymentProof;
 import za.co.nharire.order_ms.repository.PaymentProofRepository;
@@ -19,6 +21,7 @@ import java.util.Optional;
 public class PaymentProofService {
 
     private final PaymentProofRepository paymentProofRepository;
+    private final EmailService emailService;
 
     public PaymentDTO savePaymentProof(PaymentDTO paymentDTO) {
 
@@ -27,6 +30,9 @@ public class PaymentProofService {
 
         log.info(" Save PaymentProof to DB");
         PaymentProof paymentProof1 = paymentProofRepository.save(paymentProof);
+        EmailDetails emailDetails = new EmailDetails();
+        emailDetails.setAttachment(paymentDTO.getFilePath());
+        String status = emailService.sendMailWithAttachment(emailDetails);
 
         BeanUtils.copyProperties(paymentProof1, paymentDTO);
         return paymentDTO;

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import za.co.nharire.order_ms.config.email.EmailDetails;
+import za.co.nharire.order_ms.config.email.EmailService;
 import za.co.nharire.order_ms.constants.ApiConstants;
 import za.co.nharire.order_ms.model.delete.DeleteDTO;
 import za.co.nharire.order_ms.model.order.Order;
@@ -21,14 +23,16 @@ import java.util.Optional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final EmailService emailService;
 
-    public OrderDTO saveOrder(OrderDTO orderDTO) {
+    public OrderDTO saveOrder(OrderDTO orderDTO, EmailDetails emailDetails) {
 
         Order order = new Order();
         BeanUtils.copyProperties(orderDTO, order);
 
         log.info(" Save Order to DB");
         Order order1 = orderRepository.save(order);
+        String status = emailService.sendSimpleMail(emailDetails);
 
         BeanUtils.copyProperties(order1, orderDTO);
         return orderDTO;
