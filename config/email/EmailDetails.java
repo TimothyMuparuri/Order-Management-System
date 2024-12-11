@@ -1,21 +1,14 @@
 package za.co.nharire.order_ms.config.email;
-// Java Program to Illustrate EmailDetails Class
 
-// Importing required classes
-
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-// Annotations
+import java.io.Serializable;
+
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
+@RequiredArgsConstructor
+public class EmailDetails implements Serializable {
 
-// Class
-public class EmailDetails {
-
-    // Class data members
     private String recipient;
     private String msgBody;
     private String subject;

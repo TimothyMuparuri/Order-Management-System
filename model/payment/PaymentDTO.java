@@ -11,4 +11,5 @@ public class PaymentDTO implements Serializable {
     private Integer orderId;
     private String filePath;
     private Boolean verified;
+
 }

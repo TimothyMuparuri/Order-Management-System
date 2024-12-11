@@ -22,16 +22,17 @@ public class RevenueController {
     private final RevenueService revenueService;
 
     @PostMapping("revenue/save")
-    public ResponseEntity<RevenueDTO> saveRevenue(@RequestBody RevenueDTO revenueDTO) {
+    public void saveRevenue(@RequestBody RevenueDTO revenueDTO) {
 
         log.info("SAVING REVENUE", revenueDTO.toString());
 
-        RevenueDTO revenueDTO1 = revenueService.saveRevenue(revenueDTO);
-        if (revenueDTO1 != null) {
-            return new ResponseEntity<>(revenueDTO1, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+//        RevenueDTO revenueDTO1 =
+        revenueService.saveRevenue();
+//        if (revenueDTO1 != null) {
+//            return new ResponseEntity<>(revenueDTO1, HttpStatus.OK);
+//        } else {
+//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
     }
 
     @GetMapping("/revenue/all")

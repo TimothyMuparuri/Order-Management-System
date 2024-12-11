@@ -10,6 +10,7 @@ import za.co.nharire.order_ms.constants.ApiConstants;
 import za.co.nharire.order_ms.model.delete.DeleteDTO;
 import za.co.nharire.order_ms.model.order.Order;
 import za.co.nharire.order_ms.model.order.OrderDTO;
+import za.co.nharire.order_ms.model.payment.PaymentDTO;
 import za.co.nharire.order_ms.repository.OrderRepository;
 
 import java.util.ArrayList;
@@ -24,16 +25,23 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final EmailService emailService;
+    private final PaymentProofService paymentProofService;
 
-    public OrderDTO saveOrder(OrderDTO orderDTO, EmailDetails emailDetails) {
+    public OrderDTO saveOrder(OrderDTO orderDTO) {
 
         Order order = new Order();
         BeanUtils.copyProperties(orderDTO, order);
 
+        EmailDetails emailDetails = new EmailDetails();
+        BeanUtils.copyProperties(orderDTO, emailDetails);
+
+        PaymentDTO paymentProof = new PaymentDTO();
+        BeanUtils.copyProperties(orderDTO, paymentProof);
+
         log.info(" Save Order to DB");
         Order order1 = orderRepository.save(order);
         String status = emailService.sendSimpleMail(emailDetails);
-
+        PaymentDTO paymentDTO = paymentProofService.savePaymentProof(paymentProof);
         BeanUtils.copyProperties(order1, orderDTO);
         return orderDTO;
     }
@@ -80,6 +88,8 @@ public class OrderService {
             Order order1 = order.get();
             order1.setOrderDate(orderDTO.getOrderDate());
             order1.setOrderStatus(orderDTO.getOrderStatus());
+            order1.setTotalCost(orderDTODetails.getTotalCost());
+            orderRepository.save(order1);
             return orderDTO;
         }
 

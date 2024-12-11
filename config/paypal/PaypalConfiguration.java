@@ -1,4 +1,4 @@
-package za.co.nharire.order_ms.config;
+package za.co.nharire.order_ms.config.paypal;
 
 import com.paypal.base.rest.APIContext;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,9 +1,6 @@
 package za.co.nharire.order_ms.model.invoice;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import org.apache.poi.hpsf.Decimal;
 
@@ -16,6 +13,7 @@ import java.time.LocalDateTime;
 public class Invoice {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name= "invoiceId")
     private Integer invoiceId;
     @Column(name= "orderId")
@@ -26,7 +24,7 @@ public class Invoice {
     private Double totalAmount;
     @Column(name= "paidAmount")
     private Double paidAmount;
-    @Column(name= "rremainingBalance")
+    @Column(name= "remainingBalance")
     private Double remainingBalance;
     @Column(name= "invoicePdfUrl")
     private String invoicePdfUrl;

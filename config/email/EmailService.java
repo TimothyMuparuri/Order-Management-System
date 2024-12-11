@@ -1,7 +1,5 @@
 package za.co.nharire.order_ms.config.email;
 
-// Java Program to Illustrate Creation Of
-// Service implementation class
 import java.io.File;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -34,7 +32,7 @@ public class  EmailService implements EmailRepository{
             SimpleMailMessage mailMessage = new SimpleMailMessage();
 
             // Setting up necessary details
-            mailMessage.setFrom("timothy.muparuri@students.uz.ac.zw");
+            mailMessage.setFrom(sender);
             mailMessage.setTo(details.getRecipient());
             mailMessage.setText(details.getMsgBody());
             mailMessage.setSubject(details.getSubject());
@@ -50,9 +48,7 @@ public class  EmailService implements EmailRepository{
     }
 
     // To send an email with attachment
-    public String
-    sendMailWithAttachment(EmailDetails details)
-    {
+    public String sendMailWithAttachment(EmailDetails details) {
         // Creating a mime message
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         MimeMessageHelper mimeMessageHelper;
@@ -80,7 +76,6 @@ public class  EmailService implements EmailRepository{
         }
 
         catch (MessagingException e) {
-
             return "Error while sending mail!!!";
         }
     }

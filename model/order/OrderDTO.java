@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class OrderDTO implements Serializable {
+
     private Integer orderId;
     private Integer userId;
     private String productDetails;
@@ -15,5 +16,14 @@ public class OrderDTO implements Serializable {
     private Double depositAmount;
     private Double remainingBalance;
     private String paymentProof;
-    private LocalDateTime orderDate = LocalDateTime.now() ;
+    private Integer totalCost;
+    private LocalDateTime orderDate = LocalDateTime.now();
+    private Integer proofId;
+    private String filePath;
+    private Boolean verified = false;
+    private String recipient;
+    private String msgBody;
+    private String subject;
+    private String attachment;
+
 }

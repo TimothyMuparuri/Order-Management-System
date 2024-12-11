@@ -12,7 +12,7 @@ public class RevenueDTO implements Serializable {
     private Integer reportId;
     private LocalDateTime weekStartDate;
     private LocalDateTime weekEndDate;
-    private Decimal totalRevenue;
-    private Decimal totalCommission;
+    private double totalRevenue;
+    private double totalCommission;
     private LocalDateTime reportGeneratedAt;
 }

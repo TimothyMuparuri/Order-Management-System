@@ -1,9 +1,6 @@
 package za.co.nharire.order_ms.model.revenue;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import org.apache.james.mime4j.dom.datetime.DateTime;
 import org.apache.poi.hpsf.Decimal;

@@ -26,7 +26,7 @@ public class OrderController {
 
         log.info("SAVING ORDER", orderDTO.toString());
 
-        OrderDTO orderDTO1 = orderService.saveOrder(orderDTO,emailDetails);
+        OrderDTO orderDTO1 = orderService.saveOrder(orderDTO);
         if (orderDTO1 != null) {
             return new ResponseEntity<>(orderDTO1, HttpStatus.OK);
         } else {
