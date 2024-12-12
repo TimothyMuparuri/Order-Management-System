@@ -25,12 +25,12 @@ import java.util.List;
 public class RevenueService {
 
     private final RevenueRepository revenueRepository;
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+//    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
     private final OrderRepository orderRepository;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer reportId = 0;
 
-    @Scheduled(fixedRate = 60800000L)
+//    @Scheduled(fixedRate = 60800000L)
     public void saveRevenue() {
 
         Revenue revenue = new Revenue();
