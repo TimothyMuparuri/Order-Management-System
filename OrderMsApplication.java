@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 //import org.springframework.scheduling.annotation.EnableAsync;
 //import za.co.nharire.order_ms.authentication.role.Role;
 //import za.co.nharire.order_ms.authentication.role.RoleRepository;
@@ -13,6 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableScheduling
+@EnableMethodSecurity
 public class OrderMsApplication {
 
 	public static void main(String[] args) {

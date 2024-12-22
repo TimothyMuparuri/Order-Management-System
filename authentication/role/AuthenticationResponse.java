@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import za.co.nharire.order_ms.authentication.user.User;
 
 @Data
 @Builder
@@ -12,4 +13,5 @@ import lombok.RequiredArgsConstructor;
 public class AuthenticationResponse {
 
     private String token;
+    private User user;
 }
