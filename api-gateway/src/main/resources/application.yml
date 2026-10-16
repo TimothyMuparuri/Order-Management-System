@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: intake
+          uri: ${OMS_INTAKE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/orders,/api/images/**
+        - id: admin-bff
+          uri: ${OMS_ADMIN_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/admin/**
+        - id: order-service
+          uri: ${OMS_ORDER_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/orders/**
+        - id: allocation-service
+          uri: ${OMS_ALLOC_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/bulk-purchases/**,/api/bulk-lines/**,/api/allocations/**
+        - id: delivery-service
+          uri: ${OMS_DELIVERY_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/orders/*/delivered,/api/orders/*/transitions
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+oms:
+  auth:
+    enabled: ${OMS_AUTH_ENABLED:false}
+    header: X-API-Key
+    api-key: ${OMS_API_KEY:dev-key}

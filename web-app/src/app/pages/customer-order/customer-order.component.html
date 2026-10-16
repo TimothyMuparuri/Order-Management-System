@@ -1,0 +1,55 @@
+<section class="panel">
+  <h2>Submit order</h2>
+  <p class="muted">1–100 lines. Each line needs a search term or an image (JPEG/PNG ≤ 10 MB).</p>
+
+  <label>
+    Customer ID
+    <input [(ngModel)]="customerId" name="customerId" />
+  </label>
+
+  @for (line of lines(); track $index; let i = $index) {
+    <article class="line">
+      <header>
+        <strong>Line {{ i + 1 }}</strong>
+        <button type="button" class="ghost" (click)="removeLine(i)" [disabled]="lines().length === 1">Remove</button>
+      </header>
+      <label>
+        Search term
+        <input [(ngModel)]="line.searchTerm" [name]="'search' + i" maxlength="200" />
+      </label>
+      <label>
+        Quantity
+        <input type="number" [(ngModel)]="line.quantity" [name]="'qty' + i" min="1" max="10000" />
+      </label>
+      <label>
+        Or upload image
+        <input type="file" accept="image/jpeg,image/png" (change)="onImageSelected(i, $event)" />
+      </label>
+      @if (line.imageId) {
+        <p class="muted">Image: {{ line.imageId }}</p>
+      }
+      @if (line.candidates.length) {
+        <div class="candidates">
+          <p>Confirm a match:</p>
+          @for (c of line.candidates; track c.itemRef) {
+            <button type="button" (click)="confirmMatch(i, c.itemRef)" [class.active]="line.itemRef === c.itemRef">
+              {{ c.itemRef }} ({{ c.confidence }})
+            </button>
+          }
+        </div>
+      }
+    </article>
+  }
+
+  <div class="actions">
+    <button type="button" class="secondary" (click)="addLine()">Add line</button>
+    <button type="button" (click)="submit()">Submit order</button>
+  </div>
+
+  @if (message()) {
+    <p class="ok">{{ message() }}</p>
+  }
+  @if (error()) {
+    <p class="err">{{ error() }}</p>
+  }
+</section>

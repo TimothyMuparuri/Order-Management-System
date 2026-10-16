@@ -1,0 +1,82 @@
+.panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.line {
+  border: 1px solid #d5dbe7;
+  border-radius: 12px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  background: #fff;
+}
+
+.line header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #c5cddb;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  background: #1f4b99;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #334155;
+}
+
+button.ghost {
+  background: transparent;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+button.active {
+  outline: 2px solid #0f766e;
+}
+
+.candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.muted {
+  color: #64748b;
+  margin: 0;
+}
+
+.ok {
+  color: #047857;
+}
+
+.err {
+  color: #b91c1c;
+}

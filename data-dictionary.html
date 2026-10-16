@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order MS — Architecture &amp; Data Dictionary</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --panel2: #1d2435; --ink: #e6e9ef;
+    --muted: #9aa4b8; --line: #2a3346; --accent: #6ea8fe; --accent2: #7ee0c3;
+    --warn: #ffcf7a; --chip: #243049; --code: #0b0f18;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 22px 18px;
+  }
+  nav h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+  nav a { display: block; color: var(--ink); text-decoration: none; padding: 5px 10px; border-radius: 7px; font-size: 13.5px; }
+  nav a:hover { background: var(--chip); color: var(--accent); }
+  nav .brand { font-weight: 700; font-size: 16px; margin-bottom: 12px; color: #fff; }
+  nav .brand span { color: var(--accent); }
+  main { padding: 40px 48px 120px; max-width: 1080px; }
+  header.page { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 10px; }
+  header.page h1 { margin: 0 0 6px; font-size: 28px; }
+  header.page p { margin: 0; color: var(--muted); }
+  section { padding: 28px 0; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 22px; margin: 0 0 14px; color: #fff; }
+  section h3 { font-size: 17px; margin: 26px 0 8px; color: var(--accent2); }
+  section h4 { font-size: 15px; margin: 18px 0 6px; color: var(--accent); }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin: 14px 0; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel2); }
+  tr:hover td { background: rgba(110,168,254,.05); }
+  code { background: var(--code); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; color: var(--accent2); }
+  .flow {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent2);
+    border-radius: 10px; padding: 12px 14px; margin: 8px 0 18px; font-size: 14px;
+  }
+  .flow b { color: var(--accent2); }
+  .db-badge {
+    display: inline-block; background: var(--chip); border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--accent); margin-left: 8px;
+  }
+  .note { background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.3); border-radius: 10px; padding: 12px 14px; margin: 12px 0; color: var(--warn); font-size: 13.5px; }
+  footer { color: var(--muted); font-size: 12.5px; padding-top: 24px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav { position: static; height: auto; } main { padding: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Order <span>MS</span> &middot; Data</div>
+  <h2>Architecture</h2>
+  <a href="#architecture">System architecture</a>
+  <a href="#lifecycle">Order lifecycle</a>
+  <a href="#events">Kafka events</a>
+  <h2>Databases</h2>
+  <a href="#order-pg">order_pg</a>
+  <a href="#alloc-pg">alloc_pg</a>
+  <a href="#delivery-pg">delivery_pg</a>
+  <a href="#notif-pg">notif_pg</a>
+  <a href="#shared">Shared outbox / dedup</a>
+  <a href="#stateless">Stateless services</a>
+  <h2>Processing</h2>
+  <a href="#flows">End-to-end flows</a>
+</nav>
+<main>
+<header class="page">
+  <h1>Architecture &amp; Data Dictionary</h1>
+  <p>Every PostgreSQL database, table, field, and how that data is written and consumed in the Order Management System.</p>
+</header>
+
+<section id="architecture">
+  <h2>System architecture</h2>
+  <p class="muted">Clients talk REST/JSON to one API Gateway. Each bounded context is a Spring Boot service with its own PostgreSQL database. Domain changes publish through a transactional outbox onto Kafka.</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  WEB["Angular web / Capacitor mobile"]
+  GW["api-gateway<br/>Spring Cloud Gateway"]
+  WEB --> GW
+  GW --> INT["intake-service"]
+  GW --> ORD["order-service"]
+  GW --> ADM["admin-bff-service<br/>no DB"]
+  GW --> ALL["allocation-service"]
+  GW --> DEL["delivery-service"]
+  ORD --> ORDDB[("order_pg")]
+  ALL --> ALLDB[("alloc_pg")]
+  DEL --> DELDB[("delivery_pg")]
+  INT --> S3[("Object storage / S3")]
+  ORD -. outbox .-> K{{"Apache Kafka"}}
+  INT -. outbox .-> K
+  ALL -. outbox .-> K
+  DEL -. outbox .-> K
+  K --> IMG["image-analysis-service"]
+  K --> NOT["notification-service"]
+  K --> ALL
+  K --> DEL
+  NOT --> NOTDB[("notif_pg")]
+  IMG --> IMGDB[("image_pg / outbox")]
+    </pre>
+  </div>
+  <div class="note">Cross-database references are plain IDs only (no foreign keys across services). Consistency is maintained by Kafka events and idempotent consumers.</div>
+</section>
+
+<section id="lifecycle">
+  <h2>Order lifecycle</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Created: OrderCreated
+  Created --> Allocated: OrderFullyAllocated
+  Allocated --> Delivered_To_Customer: markOrderDelivered
+    </pre>
+  </div>
+</section>
+
+<section id="events">
+  <h2>Kafka topics (drive table writes)</h2>
+  <table>
+    <tr><th>Topic</th><th>Producer writes</th><th>Consumer updates</th></tr>
+    <tr><td><code>oms.orders.created</code></td><td><code>order_pg.outbox_event</code></td><td><code>delivery_pg.order_lifecycle</code>, <code>alloc_pg.order_line_allocation_state</code></td></tr>
+    <tr><td><code>oms.orders.fully-allocated</code></td><td><code>alloc_pg.outbox_event</code></td><td><code>delivery_pg</code> status → Allocated + transition row</td></tr>
+    <tr><td><code>oms.bulk.received</code></td><td><code>alloc_pg.outbox_event</code></td><td>future analytics</td></tr>
+    <tr><td><code>oms.orders.delivered</code></td><td><code>delivery_pg.outbox_event</code></td><td>audit / notify path</td></tr>
+    <tr><td><code>oms.notifications.requested</code></td><td><code>delivery_pg.outbox_event</code></td><td><code>notif_pg.notification_record</code></td></tr>
+    <tr><td><code>oms.images.uploaded</code></td><td>intake outbox</td><td>image-analysis → match suggested</td></tr>
+    <tr><td><code>oms.images.match-suggested</code></td><td>image-analysis outbox</td><td>UI / intake confirmation</td></tr>
+  </table>
+</section>
+
+<!-- ===================== order_pg ===================== -->
+<section id="order-pg">
+  <h2>Database: <code>order_pg</code> <span class="db-badge">order-service</span></h2>
+  <p class="muted">Authoritative store for customers, catalog items, and customer orders.</p>
+
+  <h3 id="tbl-customer"><code>customer</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>customerId</code></td><td>String (PK)</td><td>required, unique</td><td>Customer identity</td></tr>
+    <tr><td><code>email</code></td><td>String</td><td>embedded contact</td><td>Contact email</td></tr>
+    <tr><td><code>phone</code></td><td>String</td><td>embedded contact</td><td>Contact phone</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Must exist before <code>createOrder</code>. Intake / order-service reject the whole order if <code>customerId</code> is missing or unknown. Not updated by the allocation or delivery flows.</div>
+
+  <h3 id="tbl-item"><code>item</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>itemRef</code></td><td>String (PK)</td><td>required, unique</td><td>Catalog / product reference</td></tr>
+    <tr><td><code>type</code></td><td>enum</td><td>SEARCH_TERM | IMAGE</td><td>How the item was specified</td></tr>
+    <tr><td><code>searchTerm</code></td><td>String</td><td>1..200 when SEARCH_TERM</td><td>Text search specification</td></tr>
+    <tr><td><code>objectKey</code></td><td>String</td><td>when IMAGE</td><td>Object-storage key for image</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Every order line’s <code>itemRef</code> must exist before the order is written. Image-specified lines are matched via vision candidates; the confirmed <code>itemRef</code> is what gets stored on the line.</div>
+
+  <h3 id="tbl-customer-order"><code>customer_order</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>orderId</code></td><td>String (PK)</td><td>unique, immutable</td><td>Order identity (UUID)</td></tr>
+    <tr><td><code>customerId</code></td><td>String</td><td>required, FK-by-id to customer</td><td>Owning customer</td></tr>
+    <tr><td><code>orderStatus</code></td><td>enum</td><td>Created | Allocated | Delivered_To_Customer</td><td>Mirrored status for queries</td></tr>
+    <tr><td><code>deliveredToCustomerAt</code></td><td>Instant</td><td>optional</td><td>When marked delivered</td></tr>
+    <tr><td><code>adminToCustomerDurationSeconds</code></td><td>Long</td><td>optional, ≥ 0</td><td>Whole-second delivery duration</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Created atomically in one JPA transaction with lines + an <code>OrderCreated</code> outbox row. Status can be updated via admin BFF. Delivery timestamps may be mirrored here for read models; authoritative lifecycle transitions live in <code>delivery_pg</code>.</div>
+
+  <h3 id="tbl-customer-order-line"><code>customer_order_line</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>orderLineId</code></td><td>String (PK)</td><td>required</td><td>Line identity</td></tr>
+    <tr><td><code>orderId</code></td><td>String</td><td>required</td><td>Parent order</td></tr>
+    <tr><td><code>itemRef</code></td><td>String</td><td>required, must exist in <code>item</code></td><td>Product reference</td></tr>
+    <tr><td><code>requestedQty</code></td><td>int</td><td>1..999,999</td><td>Quantity the customer asked for</td></tr>
+    <tr><td><code>fullyAllocated</code></td><td>boolean</td><td>default false</td><td>True when allocated qty meets requested</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Written only on successful intake → <code>createOrder</code>. Allocation service tracks its own totals; full allocation is detected there and published as <code>OrderFullyAllocated</code>. Line count at intake is 1..100.</div>
+</section>
+
+<!-- ===================== alloc_pg ===================== -->
+<section id="alloc-pg">
+  <h2>Database: <code>alloc_pg</code> <span class="db-badge">allocation-service</span></h2>
+  <p class="muted">Bulk purchases from external platforms, receiving stock, and allocating units to customer order lines.</p>
+
+  <h3 id="tbl-bulk"><code>bulk_purchase</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>bulkId</code></td><td>String (PK)</td><td>required</td><td>Bulk purchase identity</td></tr>
+    <tr><td><code>platformName</code></td><td>String</td><td>1..100 chars</td><td>External platform (e.g. AliExpress)</td></tr>
+    <tr><td><code>placementDate</code></td><td>LocalDate</td><td>≤ today</td><td>When the bulk order was placed</td></tr>
+    <tr><td><code>status</code></td><td>enum</td><td>RECORDED | DELIVERED_TO_ADMIN</td><td>Bulk lifecycle</td></tr>
+    <tr><td><code>deliveredToAdminAt</code></td><td>Instant</td><td>optional</td><td>When stock arrived to admin</td></tr>
+    <tr><td><code>platformToAdminDurationSeconds</code></td><td>Long</td><td>optional, ≥ 0</td><td>Platform → admin duration</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Admin records a bulk purchase through admin-bff → allocation-service. Header + 1..500 lines are validated and saved atomically. Nothing is persisted if any field fails validation.</div>
+
+  <h3 id="tbl-bulk-line"><code>bulk_purchase_line</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>bulkLineId</code></td><td>String (PK)</td><td>required</td><td>Bulk line identity</td></tr>
+    <tr><td><code>bulkId</code></td><td>String</td><td>required</td><td>Parent bulk purchase</td></tr>
+    <tr><td><code>itemRef</code></td><td>String</td><td>required</td><td>Product purchased in bulk</td></tr>
+    <tr><td><code>purchasedQty</code></td><td>int</td><td>1..1,000,000</td><td>Qty bought on platform</td></tr>
+    <tr><td><code>unitCost</code></td><td>BigDecimal</td><td>0.01..999,999,999.99</td><td>Cost per unit</td></tr>
+    <tr><td><code>receivedQty</code></td><td>int</td><td>≥ 0, default 0</td><td>Qty physically received</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Created with the bulk header. <code>markReceived</code> sets <code>receivedQty</code> and publishes <code>BulkPurchaseReceived</code>. Allocations may not exceed <code>receivedQty − alreadyAllocated</code>.</div>
+
+  <h3 id="tbl-allocation"><code>allocation</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>allocationId</code></td><td>String (PK)</td><td>required</td><td>Allocation identity</td></tr>
+    <tr><td><code>bulkLineId</code></td><td>String</td><td>required</td><td>Source bulk line</td></tr>
+    <tr><td><code>orderLineId</code></td><td>String</td><td>required</td><td>Target customer order line</td></tr>
+    <tr><td><code>orderId</code></td><td>String</td><td>required</td><td>Parent order (denormalized)</td></tr>
+    <tr><td><code>quantity</code></td><td>int</td><td>≥ 1</td><td>Units allocated in this move</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> <code>allocate</code> enforces three guards — qty ≥ 1, qty ≤ remaining received on bulk line, qty ≤ remaining requested on order line. On reject, nothing changes. On success, a row is inserted and order-line totals are updated. When every line of an order is fully allocated, <code>OrderFullyAllocated</code> is written to the outbox.</div>
+
+  <h3 id="tbl-order-line-state"><code>order_line_allocation_state</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>orderLineId</code></td><td>String (PK)</td><td>required</td><td>Customer order line id</td></tr>
+    <tr><td><code>orderId</code></td><td>String</td><td>required</td><td>Parent order</td></tr>
+    <tr><td><code>requestedQty</code></td><td>int</td><td>≥ 1</td><td>Ceiling from order creation</td></tr>
+    <tr><td><code>allocatedQty</code></td><td>int</td><td>≥ 0</td><td>Running total allocated</td></tr>
+    <tr><td><code>fullyAllocated</code></td><td>boolean</td><td>—</td><td><code>allocatedQty ≥ requestedQty</code></td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Seeded when allocation-service consumes <code>OrderCreated</code> (idempotent). Updated on each successful <code>allocate</code>. Used to detect full allocation for the order.</div>
+</section>
+
+<!-- ===================== delivery_pg ===================== -->
+<section id="delivery-pg">
+  <h2>Database: <code>delivery_pg</code> <span class="db-badge">delivery-service</span></h2>
+  <p class="muted">Authoritative order lifecycle, transition history, and delivery timing.</p>
+
+  <h3 id="tbl-lifecycle"><code>order_lifecycle</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>orderId</code></td><td>String (PK)</td><td>required</td><td>Order identity</td></tr>
+    <tr><td><code>customerId</code></td><td>String</td><td>required</td><td>For notification payload</td></tr>
+    <tr><td><code>status</code></td><td>enum</td><td>Created | Allocated | Delivered_To_Customer</td><td>Current lifecycle status</td></tr>
+    <tr><td><code>placementDate</code></td><td>LocalDate</td><td>required for delivery mark</td><td>Anchor for duration calc</td></tr>
+    <tr><td><code>deliveredToCustomerAt</code></td><td>Instant</td><td>optional, single-shot</td><td>Delivery timestamp</td></tr>
+    <tr><td><code>adminToCustomerDurationSeconds</code></td><td>Long</td><td>optional, ≥ 0 whole seconds</td><td>Computed duration</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Created on <code>OrderCreated</code> with status <code>Created</code>. Moved to <code>Allocated</code> on <code>OrderFullyAllocated</code>. <code>markOrderDelivered</code> only allowed from <code>Allocated</code>; rejects missing placement date, delivered-before-placement, and re-marking. On success writes outbox events for delivered + notification requested.</div>
+
+  <h3 id="tbl-transition"><code>status_transition_record</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>id</code></td><td>String (PK)</td><td>UUID</td><td>Record identity</td></tr>
+    <tr><td><code>orderId</code></td><td>String</td><td>required</td><td>Order this transition belongs to</td></tr>
+    <tr><td><code>priorStatus</code></td><td>enum / null</td><td>nullable for first transition</td><td>Status before change</td></tr>
+    <tr><td><code>newStatus</code></td><td>enum</td><td>required</td><td>Status after change</td></tr>
+    <tr><td><code>timestamp</code></td><td>Instant</td><td>required</td><td>When the transition happened</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Append-only. A new row is inserted on every successful status change. Never updated or deleted. Powers audit / history APIs.</div>
+</section>
+
+<!-- ===================== notif_pg ===================== -->
+<section id="notif-pg">
+  <h2>Database: <code>notif_pg</code> <span class="db-badge">notification-service</span></h2>
+
+  <h3 id="tbl-notif"><code>notification_record</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>orderId</code></td><td>String (PK)</td><td>required</td><td>Order being notified</td></tr>
+    <tr><td><code>customerId</code></td><td>String</td><td>required</td><td>Notification recipient</td></tr>
+    <tr><td><code>deliveredAt</code></td><td>Instant</td><td>required</td><td>Retained even if send fails</td></tr>
+    <tr><td><code>state</code></td><td>enum</td><td>PENDING | SENT | FAILED</td><td>Delivery outcome</td></tr>
+    <tr><td><code>attempts</code></td><td>int</td><td>0..3</td><td>Send attempts so far</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Created when consuming <code>NotificationRequested</code> (idempotent on orderId). Sender is tried up to 3 times within the 60s window policy. On success → <code>SENT</code>. On exhaustion → <code>FAILED</code>; <code>deliveredAt</code> is never cleared.</div>
+</section>
+
+<!-- ===================== shared ===================== -->
+<section id="shared">
+  <h2>Shared tables (per producing / consuming service)</h2>
+  <p class="muted">Present in services that publish or consume Kafka events (order, intake, allocation, delivery, notification, image-analysis).</p>
+
+  <h3 id="tbl-outbox"><code>outbox_event</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>eventId</code></td><td>String (PK)</td><td>UUID</td><td>Outbox row id</td></tr>
+    <tr><td><code>aggregateId</code></td><td>String</td><td>required</td><td>Kafka partition key (orderId, bulkId, imageId)</td></tr>
+    <tr><td><code>topic</code></td><td>String</td><td>required</td><td>Target Kafka topic</td></tr>
+    <tr><td><code>payload</code></td><td>LOB / text</td><td>required JSON</td><td>Serialized event body</td></tr>
+    <tr><td><code>occurredAt</code></td><td>Instant</td><td>required</td><td>When domain change happened</td></tr>
+    <tr><td><code>published</code></td><td>boolean</td><td>default false</td><td>True after relay publishes to Kafka</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Written in the <em>same</em> DB transaction as the domain change. A scheduled relay reads unpublished rows, publishes to Kafka keyed by <code>aggregateId</code>, then marks <code>published = true</code>. Guarantees a committed write and its event stay consistent.</div>
+
+  <h3 id="tbl-processed"><code>processed_event</code></h3>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
+    <tr><td><code>eventKey</code></td><td>String (PK)</td><td>topic + aggregate (+ version)</td><td>Dedup key</td></tr>
+    <tr><td><code>processedAt</code></td><td>Instant</td><td>required</td><td>When first processed</td></tr>
+  </table>
+  <div class="flow"><b>How it is processed:</b> Before handling a Kafka message, the consumer checks this table. If the key exists, the handler is a no-op. Otherwise the handler runs and the key is inserted. Makes at-least-once Kafka redelivery safe (no double allocation, double notify, etc.).</div>
+</section>
+
+<section id="stateless">
+  <h2>Stateless / no domain DB</h2>
+  <table>
+    <tr><th>Service</th><th>Data store</th><th>Role</th></tr>
+    <tr><td><code>api-gateway</code></td><td>none</td><td>Routing, optional API-key auth, edge entry</td></tr>
+    <tr><td><code>admin-bff-service</code></td><td>none (short-TTL in-memory cache)</td><td>Aggregates reads/commands to order, allocation, delivery</td></tr>
+    <tr><td><code>intake-service</code></td><td>outbox + object storage</td><td>Validates submissions, stores images, calls order-service</td></tr>
+    <tr><td><code>image-analysis-service</code></td><td>outbox (+ optional image_pg)</td><td>Consumes uploads, runs VisionProvider, emits candidates</td></tr>
+  </table>
+</section>
+
+<section id="flows">
+  <h2>End-to-end processing flows</h2>
+
+  <h3>1. Customer order intake</h3>
+  <ol class="muted">
+    <li>Client uploads image (optional) → intake validates JPEG/PNG ≤ 10 MB → object storage + <code>ImageUploaded</code> outbox.</li>
+    <li>image-analysis consumes event → VisionProvider → <code>ImageMatchSuggested</code>; user confirms <code>itemRef</code>.</li>
+    <li>Client <code>POST /api/orders</code> → intake validates lines (1..100, qty, search/image) → calls order-service.</li>
+    <li>order-service validates customer + items → writes <code>customer_order</code>, <code>customer_order_line</code>, outbox <code>OrderCreated</code>.</li>
+    <li>delivery-service inserts <code>order_lifecycle</code> (Created) + first <code>status_transition_record</code>.</li>
+    <li>allocation-service seeds <code>order_line_allocation_state</code> rows for ceilings.</li>
+  </ol>
+
+  <h3>2. Bulk purchase → allocate</h3>
+  <ol class="muted">
+    <li>Admin records bulk → <code>bulk_purchase</code> + <code>bulk_purchase_line</code> atomically.</li>
+    <li>Admin marks received → updates <code>receivedQty</code> + outbox <code>BulkPurchaseReceived</code>.</li>
+    <li>Admin allocates → insert <code>allocation</code>, update <code>order_line_allocation_state</code>.</li>
+    <li>When all lines fully allocated → outbox <code>OrderFullyAllocated</code> → delivery status Allocated + transition row.</li>
+  </ol>
+
+  <h3>3. Deliver → notify</h3>
+  <ol class="muted">
+    <li>Admin marks order delivered (only if Allocated) → update <code>order_lifecycle</code>, append transition, outbox delivered + <code>NotificationRequested</code>.</li>
+    <li>notification-service upserts <code>notification_record</code>, sends with ≤ 3 retries → SENT or FAILED.</li>
+  </ol>
+
+  <h3>Entity relationship (logical)</h3>
+  <div class="diagram">
+    <pre class="mermaid">
+erDiagram
+  CUSTOMER ||--o{ CUSTOMER_ORDER : places
+  CUSTOMER_ORDER ||--|{ CUSTOMER_ORDER_LINE : contains
+  ITEM ||--o{ CUSTOMER_ORDER_LINE : referenced_by
+  BULK_PURCHASE ||--|{ BULK_PURCHASE_LINE : contains
+  BULK_PURCHASE_LINE ||--o{ ALLOCATION : sources
+  CUSTOMER_ORDER_LINE ||--o{ ALLOCATION : targets
+  CUSTOMER_ORDER ||--o| ORDER_LIFECYCLE : tracked_as
+  ORDER_LIFECYCLE ||--|{ STATUS_TRANSITION_RECORD : history
+  CUSTOMER_ORDER ||--o| NOTIFICATION_RECORD : notifies
+    </pre>
+  </div>
+</section>
+
+<footer>
+  Generated from the OMS design and JPA entities in this repository. Open this file in a browser to view Mermaid diagrams.
+</footer>
+</main>
+</div>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark",
+    themeVariables: {
+      primaryColor: "#1d2435",
+      primaryTextColor: "#e6e9ef",
+      lineColor: "#6ea8fe",
+      fontSize: "13px"
+    }
+  });
+</script>
+</body>
+</html>

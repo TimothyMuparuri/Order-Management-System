@@ -1,0 +1,21 @@
+{
+  "name": "oms-mobile-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capacitor shell for the OMS Angular app — reuses web-app and the API Gateway",
+  "scripts": {
+    "build:web": "npm --prefix ../web-app run build",
+    "sync": "npm run build:web && npx cap sync",
+    "ios": "npx cap open ios",
+    "android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "typescript": "~5.7.2"
+  }
+}

@@ -1,0 +1,25 @@
+# Multi-stage build for any Spring Boot service module
+ARG MODULE=order-service
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+ARG MODULE
+WORKDIR /workspace
+COPY pom.xml .
+COPY oms-common oms-common
+COPY oms-eventing oms-eventing
+COPY order-service order-service
+COPY intake-service intake-service
+COPY admin-bff-service admin-bff-service
+COPY allocation-service allocation-service
+COPY delivery-service delivery-service
+COPY notification-service notification-service
+COPY image-analysis-service image-analysis-service
+COPY api-gateway api-gateway
+RUN mvn -q -pl ${MODULE} -am -DskipTests package
+
+FROM eclipse-temurin:21-jre-alpine
+ARG MODULE
+WORKDIR /app
+COPY --from=build /workspace/${MODULE}/target/${MODULE}-*.jar app.jar
+EXPOSE 8080
+ENV JAVA_OPTS="-XX:+UseContainerSupport"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

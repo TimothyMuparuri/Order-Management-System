@@ -1,0 +1,259 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order Management System - Requirements</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --panel2: #1d2435; --ink: #e6e9ef;
+    --muted: #9aa4b8; --line: #2a3346; --accent: #6ea8fe; --accent2: #7ee0c3;
+    --warn: #ffcf7a; --chip: #243049; --code: #0b0f18; --ok: #7ee0c3; --err: #ff9b9b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 22px 18px;
+  }
+  nav h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  nav a { display: block; color: var(--ink); text-decoration: none; padding: 6px 10px; border-radius: 7px; font-size: 13.5px; }
+  nav a:hover { background: var(--chip); color: var(--accent); }
+  nav a.sub { padding-left: 20px; color: var(--muted); font-size: 13px; }
+  nav .brand { font-weight: 700; font-size: 16px; margin-bottom: 18px; color: #fff; }
+  nav .brand span { color: var(--accent); }
+  main { padding: 40px 48px 120px; max-width: 1000px; }
+  header.page { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 10px; }
+  header.page h1 { margin: 0 0 6px; font-size: 30px; }
+  header.page p { margin: 0; color: var(--muted); }
+  section { padding: 26px 0; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 22px; margin: 0 0 14px; color: #fff; }
+  .muted { color: var(--muted); }
+  .req { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 18px 0; }
+  .req .top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .req .badge { background: var(--accent); color: #07101f; font-weight: 700; border-radius: 8px; padding: 4px 11px; font-size: 13px; white-space: nowrap; }
+  .req h3 { margin: 0; font-size: 18px; color: #fff; }
+  .story { background: var(--panel2); border-left: 3px solid var(--accent2); border-radius: 8px; padding: 11px 14px; margin: 10px 0 16px; font-size: 14px; }
+  .story b { color: var(--accent2); }
+  ol.ac { margin: 0; padding-left: 0; counter-reset: ac; list-style: none; }
+  ol.ac li { position: relative; padding: 8px 10px 8px 44px; border-bottom: 1px solid var(--line); font-size: 13.8px; }
+  ol.ac li:last-child { border-bottom: none; }
+  ol.ac li::before { counter-increment: ac; content: counter(ac); position: absolute; left: 10px; top: 8px; width: 24px; height: 24px; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 12px; text-align: center; line-height: 23px; }
+  ol.ac li:hover { background: rgba(110,168,254,.05); }
+  .kw { font-weight: 700; }
+  .kw.when, .kw.while, .kw.where { color: var(--accent); }
+  .kw.if, .kw.then { color: var(--warn); }
+  .kw.shall { color: var(--ok); }
+  code { background: var(--code); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; color: var(--accent2); }
+  table.glossary { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13.5px; }
+  table.glossary th, table.glossary td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.glossary th { color: var(--muted); background: var(--panel2); }
+  table.glossary td.term { color: var(--accent); font-weight: 600; white-space: nowrap; }
+  table.glossary tr:hover td { background: rgba(110,168,254,.05); }
+  .deferred { background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.3); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+  .deferred b { color: var(--warn); }
+  footer { color: var(--muted); font-size: 12.5px; padding-top: 24px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav { position: static; height: auto; } main { padding: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Order <span>MS</span> &middot; Requirements</div>
+  <h2>Contents</h2>
+  <a href="#intro">Introduction</a>
+  <a href="#glossary">Glossary</a>
+  <a href="#r1" class="sub">1 &middot; Customer Order Intake</a>
+  <a href="#r2" class="sub">2 &middot; Order Data Model</a>
+  <a href="#r3" class="sub">3 &middot; Admin Order Management</a>
+  <a href="#r4" class="sub">4 &middot; Bulk Purchase Recording</a>
+  <a href="#r5" class="sub">5 &middot; Allocation</a>
+  <a href="#r6" class="sub">6 &middot; Order Status Lifecycle</a>
+  <a href="#r7" class="sub">7 &middot; Dual Delivery Timing</a>
+  <a href="#r8" class="sub">8 &middot; Delivery & Notification</a>
+  <a href="#deferred">Out of Scope</a>
+</nav>
+<main>
+<header class="page">
+  <h1>Order Management System</h1>
+  <p>Requirements specification &mdash; drop-shipping fulfillment platform (EARS-format acceptance criteria)</p>
+</header>
+
+<section id="intro">
+  <h2>Introduction</h2>
+  <p>This document defines the requirements for a drop-shipping Order Management System (OMS). The system enables customers to submit orders through a website, allows administrators to record manual bulk purchases from external platforms, allocates received bulk-purchased units to individual customer order lines, and tracks the order lifecycle with dual delivery timing (platform-to-admin and admin-to-customer).</p>
+  <p class="muted">The MVP intentionally excludes WhatsApp-based intake and automated purchasing or external platform API integrations. These are deferred to a later release and listed under Out of Scope.</p>
+</section>
+<section id="glossary">
+  <h2>Glossary</h2>
+  <table class="glossary">
+    <tr><th>Term</th><th>Definition</th></tr>
+    <tr><td class="term">OMS</td><td>The Order Management System; the complete software handling intake, administration, allocation, and delivery tracking.</td></tr>
+    <tr><td class="term">Intake_Service</td><td>Accepts and validates customer order submissions through the website.</td></tr>
+    <tr><td class="term">Order_Service</td><td>Creates and manages customer orders and their order lines.</td></tr>
+    <tr><td class="term">Admin_Console</td><td>Interface administrators use to view and manage orders and bulk purchases.</td></tr>
+    <tr><td class="term">Allocation_Service</td><td>Maps received bulk-purchase units to individual customer order lines.</td></tr>
+    <tr><td class="term">Delivery_Tracker</td><td>Manages order status and computes delivery timing values.</td></tr>
+    <tr><td class="term">Notification_Service</td><td>Sends delivery notifications to customers.</td></tr>
+    <tr><td class="term">Customer</td><td>An end user who submits an order through the website.</td></tr>
+    <tr><td class="term">Administrator</td><td>An authorized operator who manages orders, records bulk purchases, performs allocations, and marks deliveries.</td></tr>
+    <tr><td class="term">Customer_Order</td><td>A single order submitted by one Customer; belongs to exactly one Customer and contains one or more order lines.</td></tr>
+    <tr><td class="term">Customer_Order_Line</td><td>A single line within a Customer_Order representing a requested item, including quantity.</td></tr>
+    <tr><td class="term">Item</td><td>A product requested by a Customer, identified by a text search term or an uploaded image.</td></tr>
+    <tr><td class="term">Bulk_Purchase</td><td>A purchase an Administrator made manually from an External_Platform, containing one or more bulk purchase lines.</td></tr>
+    <tr><td class="term">Bulk_Purchase_Line</td><td>A single line within a Bulk_Purchase representing a purchased item, including quantity and unit cost.</td></tr>
+    <tr><td class="term">External_Platform</td><td>An external retail platform (e.g. Amazon, Shein, Takealot) from which an Administrator makes a Bulk_Purchase.</td></tr>
+    <tr><td class="term">Platform_Order_Placement_Date</td><td>The date the Administrator placed the Bulk_Purchase order with the External_Platform.</td></tr>
+    <tr><td class="term">Allocation</td><td>A link assigning a quantity of received units from a Bulk_Purchase_Line to a Customer_Order_Line.</td></tr>
+    <tr><td class="term">Platform_To_Admin_Duration</td><td>Elapsed time from placement date to when the Administrator marks the Bulk_Purchase delivered to them.</td></tr>
+    <tr><td class="term">Admin_To_Customer_Duration</td><td>Elapsed time from placement date to when the Customer_Order is marked delivered to the Customer.</td></tr>
+    <tr><td class="term">Order_Status</td><td>Lifecycle state of a Customer_Order: Created, Allocated, or Delivered_To_Customer.</td></tr>
+    <tr><td class="term">Bulk_Purchase_Status</td><td>Delivery state of a Bulk_Purchase; set to delivered-to-admin once marked by the Administrator.</td></tr>
+    <tr><td class="term">Notification_Failed_State</td><td>State indicating the Notification_Service exhausted all retries without sending the notification.</td></tr>
+  </table>
+</section>
+<section id="r1">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 1</span><h3>Customer Order Intake</h3></div>
+    <div class="story"><b>User Story:</b> As a Customer, I want to submit an order for one or more items through the website, so that the Administrator can fulfill my request.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> a Customer submits an order containing at least one valid Customer_Order_Line, THE Intake_Service <span class="kw shall">SHALL</span> create exactly one Customer_Order associated with that Customer.</li>
+      <li><span class="kw where">WHERE</span> a Customer_Order_Line specifies an item by search term, THE Intake_Service <span class="kw shall">SHALL</span> record the search term, which <span class="kw shall">SHALL</span> contain between 1 and 200 characters, for that Customer_Order_Line.</li>
+      <li><span class="kw where">WHERE</span> a Customer_Order_Line specifies an item by image upload, THE Intake_Service <span class="kw shall">SHALL</span> record the uploaded image for that Customer_Order_Line.</li>
+      <li><span class="kw when">WHEN</span> a Customer adds a Customer_Order_Line to a Customer_Order, THE Intake_Service <span class="kw shall">SHALL</span> record the requested quantity, which <span class="kw shall">SHALL</span> be an integer from 1 to 10,000, for that Customer_Order_Line.</li>
+      <li>THE Intake_Service <span class="kw shall">SHALL</span> allow a single Customer_Order to contain from 1 to 100 Customer_Order_Lines.</li>
+      <li><span class="kw if">IF</span> a Customer submits an order with no Customer_Order_Line, <span class="kw then">THEN</span> THE Intake_Service <span class="kw shall">SHALL</span> reject the submission, persist no Customer_Order, and return a validation error indicating that at least one order line is required.</li>
+      <li><span class="kw if">IF</span> a Customer_Order_Line specifies a quantity that is not an integer from 1 to 10,000, <span class="kw then">THEN</span> THE Intake_Service <span class="kw shall">SHALL</span> reject the submission, persist no Customer_Order, and return a validation error indicating the invalid quantity and the affected order line.</li>
+      <li><span class="kw if">IF</span> a Customer_Order_Line specifies neither a search term nor an uploaded image, <span class="kw then">THEN</span> THE Intake_Service <span class="kw shall">SHALL</span> reject the submission, persist no Customer_Order, and return a validation error indicating that an item specification is required and the affected order line.</li>
+      <li><span class="kw if">IF</span> a Customer_Order_Line specifies an uploaded image whose format is not JPEG or PNG, or whose size exceeds 10 MB, <span class="kw then">THEN</span> THE Intake_Service <span class="kw shall">SHALL</span> reject the submission, persist no Customer_Order, and return a validation error indicating the invalid image and the affected order line.</li>
+      <li><span class="kw if">IF</span> a Customer submits an order containing more than 100 Customer_Order_Lines, <span class="kw then">THEN</span> THE Intake_Service <span class="kw shall">SHALL</span> reject the submission, persist no Customer_Order, and return a validation error indicating the maximum order line count was exceeded.</li>
+    </ol>
+  </div>
+</section>
+<section id="r2">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 2</span><h3>Order Data Model</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want each order to be tied to a single customer with its own line items, so that order ownership and contents are unambiguous.</div>
+    <ol class="ac">
+      <li>THE Order_Service <span class="kw shall">SHALL</span> associate each Customer_Order with exactly one Customer.</li>
+      <li>THE Order_Service <span class="kw shall">SHALL</span> associate each Customer_Order_Line with exactly one Customer_Order.</li>
+      <li>THE Order_Service <span class="kw shall">SHALL</span> record for each Customer_Order_Line an item reference and a requested quantity, where the requested quantity is an integer from 1 to 999,999.</li>
+      <li><span class="kw when">WHEN</span> a Customer_Order is created, THE Order_Service <span class="kw shall">SHALL</span> assign to that Customer_Order an identifier that is unique across all Customer_Orders and that remains unchanged for the lifetime of the Customer_Order.</li>
+      <li><span class="kw if">IF</span> a Customer_Order is submitted for creation without a reference to exactly one existing Customer, <span class="kw then">THEN</span> THE Order_Service <span class="kw shall">SHALL</span> reject the creation, create no Customer_Order, and return an error indicating that a valid customer association is required.</li>
+      <li><span class="kw if">IF</span> a Customer_Order_Line references an item that does not exist, <span class="kw then">THEN</span> THE Order_Service <span class="kw shall">SHALL</span> reject the Customer_Order_Line, persist no part of the submitted order, and return an error indicating that the item reference is invalid.</li>
+      <li><span class="kw if">IF</span> a Customer_Order_Line is submitted with a requested quantity that is not an integer or that falls outside the range 1 to 999,999, <span class="kw then">THEN</span> THE Order_Service <span class="kw shall">SHALL</span> reject the Customer_Order_Line, persist no part of the submitted order, and return an error indicating that the requested quantity is out of range.</li>
+    </ol>
+  </div>
+</section>
+<section id="r3">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 3</span><h3>Administrator Order Management</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want to view and manage customer orders, so that I can process and fulfill them.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> an Administrator requests the order list, THE Admin_Console <span class="kw shall">SHALL</span> display every existing Customer_Order together with its unique identifier and current Order_Status.</li>
+      <li><span class="kw when">WHEN</span> an Administrator requests the order list and no Customer_Order exists, THE Admin_Console <span class="kw shall">SHALL</span> display an empty order list without returning an error.</li>
+      <li><span class="kw when">WHEN</span> an Administrator selects an existing Customer_Order, THE Admin_Console <span class="kw shall">SHALL</span> display the associated Customer, all Customer_Order_Lines of that Customer_Order, and the requested quantity of each Customer_Order_Line.</li>
+      <li><span class="kw if">IF</span> an Administrator selects a Customer_Order that does not exist, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the request and return an error indicating that the Customer_Order was not found.</li>
+      <li><span class="kw when">WHEN</span> an Administrator updates the Order_Status of a Customer_Order to a defined Order_Status value, THE Admin_Console <span class="kw shall">SHALL</span> persist the new Order_Status and retain it for subsequent retrievals of that Customer_Order.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to update the Order_Status of a Customer_Order to a value that is not a defined Order_Status value, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the update, retain the previous Order_Status, and return a validation error indicating the Order_Status value is invalid.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="r4">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 4</span><h3>Bulk Purchase Recording</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want to record manual bulk purchases made from external platforms, so that purchased stock can be tracked and allocated to customer orders.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> an Administrator records a Bulk_Purchase, THE Admin_Console <span class="kw shall">SHALL</span> store the External_Platform name, which <span class="kw shall">SHALL</span> contain between 1 and 100 characters, for that Bulk_Purchase.</li>
+      <li><span class="kw when">WHEN</span> an Administrator records a Bulk_Purchase, THE Admin_Console <span class="kw shall">SHALL</span> store the Platform_Order_Placement_Date, which <span class="kw shall">SHALL</span> be on or before the current system date, for that Bulk_Purchase.</li>
+      <li><span class="kw when">WHEN</span> an Administrator adds a Bulk_Purchase_Line, THE Admin_Console <span class="kw shall">SHALL</span> store the item reference, the purchased quantity, and the unit cost for that Bulk_Purchase_Line.</li>
+      <li>THE Admin_Console <span class="kw shall">SHALL</span> allow a single Bulk_Purchase to contain from 1 to 500 Bulk_Purchase_Lines.</li>
+      <li><span class="kw if">IF</span> an Administrator records a Bulk_Purchase without an External_Platform name or with a name outside 1 to 100 characters, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the record, persist no part of the Bulk_Purchase, and return a validation error identifying the External_Platform name as invalid.</li>
+      <li><span class="kw if">IF</span> an Administrator records a Bulk_Purchase without a Platform_Order_Placement_Date or with a date after the current system date, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the record, persist no part of the Bulk_Purchase, and return a validation error identifying the Platform_Order_Placement_Date as invalid.</li>
+      <li><span class="kw if">IF</span> a Bulk_Purchase_Line specifies a purchased quantity that is not an integer from 1 to 1,000,000, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the record, persist no part of the Bulk_Purchase, and return a validation error identifying the purchased quantity as invalid.</li>
+      <li><span class="kw if">IF</span> a Bulk_Purchase_Line specifies a unit cost outside the range 0.01 to 999,999,999.99, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the record, persist no part of the Bulk_Purchase, and return a validation error identifying the unit cost as invalid.</li>
+      <li><span class="kw if">IF</span> an Administrator records a Bulk_Purchase with no Bulk_Purchase_Line, <span class="kw then">THEN</span> THE Admin_Console <span class="kw shall">SHALL</span> reject the record, persist no part of the Bulk_Purchase, and return a validation error indicating that at least one Bulk_Purchase_Line is required.</li>
+    </ol>
+  </div>
+</section>
+<section id="r5">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 5</span><h3>Allocation of Bulk Units to Customer Orders</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want to map received bulk-purchase units to individual customer order lines, so that each customer receives the correct items.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> an Administrator links a Customer_Order_Line to a Bulk_Purchase_Line with an allocated quantity that is an integer of at least 1, THE Allocation_Service <span class="kw shall">SHALL</span> create an Allocation that records the allocated quantity, the source Bulk_Purchase_Line, and the target Customer_Order_Line.</li>
+      <li><span class="kw when">WHEN</span> an Administrator marks units of a Bulk_Purchase_Line as received with a received quantity that is an integer of at least 0, THE Allocation_Service <span class="kw shall">SHALL</span> record the received quantity for that Bulk_Purchase_Line.</li>
+      <li>THE Allocation_Service <span class="kw shall">SHALL</span> track, for each Bulk_Purchase_Line, the total allocated quantity across all Allocations.</li>
+      <li>THE Allocation_Service <span class="kw shall">SHALL</span> track, for each Customer_Order_Line, the total allocated quantity across all Allocations.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to allocate a quantity from a Bulk_Purchase_Line that exceeds the received quantity minus the already-allocated quantity for that Bulk_Purchase_Line, <span class="kw then">THEN</span> THE Allocation_Service <span class="kw shall">SHALL</span> reject the request without creating or modifying any Allocation, leave the Bulk_Purchase_Line allocated and received quantities unchanged, and return an error indicating that the requested quantity exceeds the available unallocated received quantity.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to allocate a quantity to a Customer_Order_Line that exceeds the requested quantity minus the already-allocated quantity for that Customer_Order_Line, <span class="kw then">THEN</span> THE Allocation_Service <span class="kw shall">SHALL</span> reject the request without creating or modifying any Allocation, leave the Customer_Order_Line allocated quantity unchanged, and return an error indicating that the requested quantity exceeds the remaining unallocated requested quantity.</li>
+      <li><span class="kw when">WHEN</span> the total allocated quantity for a Customer_Order_Line equals the requested quantity of that Customer_Order_Line, THE Allocation_Service <span class="kw shall">SHALL</span> mark that Customer_Order_Line as fully allocated.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to create an Allocation with an allocated quantity that is not an integer or is less than 1, <span class="kw then">THEN</span> THE Allocation_Service <span class="kw shall">SHALL</span> reject the request without creating any Allocation and return an error indicating that the allocated quantity is invalid.</li>
+    </ol>
+  </div>
+</section>
+<section id="r6">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 6</span><h3>Order Status Lifecycle</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want each order to progress through defined status states, so that I can track fulfillment progress.</div>
+    <ol class="ac">
+      <li>THE Delivery_Tracker <span class="kw shall">SHALL</span> constrain the Order_Status of every Customer_Order to exactly one of the following defined states: Created, Allocated, and Delivered_To_Customer.</li>
+      <li><span class="kw when">WHEN</span> a Customer_Order is created, THE Delivery_Tracker <span class="kw shall">SHALL</span> set the Order_Status to Created.</li>
+      <li><span class="kw when">WHEN</span> all Customer_Order_Lines of a Customer_Order are fully allocated, THE Delivery_Tracker <span class="kw shall">SHALL</span> update the Order_Status to Allocated.</li>
+      <li><span class="kw when">WHEN</span> an Administrator marks a Customer_Order as delivered to the Customer and the Order_Status of that Customer_Order is Allocated, THE Delivery_Tracker <span class="kw shall">SHALL</span> update the Order_Status to Delivered_To_Customer.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to mark a Customer_Order as delivered to the Customer when the Order_Status of that Customer_Order is not Allocated, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the action, leave the Order_Status unchanged, and return an error indicating the order is not in a state eligible for delivery.</li>
+      <li><span class="kw when">WHEN</span> the Order_Status of a Customer_Order changes, THE Delivery_Tracker <span class="kw shall">SHALL</span> persist a transition record for that Customer_Order containing the prior Order_Status, the new Order_Status, and the timestamp of the transition.</li>
+      <li>THE Delivery_Tracker <span class="kw shall">SHALL</span> retain every persisted Order_Status transition record for each Customer_Order for the lifetime of that Customer_Order.</li>
+    </ol>
+  </div>
+</section>
+<section id="r7">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 7</span><h3>Dual Delivery Timing</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want the system to compute delivery durations from the platform order placement date, so that I can measure fulfillment speed at each stage.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> an Administrator marks a Bulk_Purchase as delivered to the Administrator, THE Delivery_Tracker <span class="kw shall">SHALL</span> compute the Platform_To_Admin_Duration, expressed as a non-negative integer number of whole seconds, as the elapsed time from the Platform_Order_Placement_Date to the delivered-to-admin timestamp.</li>
+      <li><span class="kw when">WHEN</span> an Administrator marks a Customer_Order as delivered to the Customer, THE Delivery_Tracker <span class="kw shall">SHALL</span> compute the Admin_To_Customer_Duration, expressed as a non-negative integer number of whole seconds, as the elapsed time from the Platform_Order_Placement_Date to the delivered-to-customer timestamp.</li>
+      <li>THE Delivery_Tracker <span class="kw shall">SHALL</span> store the Platform_To_Admin_Duration for each Bulk_Purchase that has been marked delivered to the Administrator.</li>
+      <li>THE Delivery_Tracker <span class="kw shall">SHALL</span> store the Admin_To_Customer_Duration for each Customer_Order that has been marked delivered to the Customer.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to mark a Bulk_Purchase as delivered to the Administrator when the Bulk_Purchase has no Platform_Order_Placement_Date, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the action, record no delivered-to-admin timestamp, and return an error indicating the placement date is missing.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to mark a Customer_Order as delivered to the Customer when the associated Platform_Order_Placement_Date is unavailable, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the action, record no delivered-to-customer timestamp, and return an error indicating the placement date is missing.</li>
+      <li><span class="kw if">IF</span> the delivered timestamp precedes the Platform_Order_Placement_Date, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the action and return an error indicating the delivered timestamp is invalid.</li>
+    </ol>
+  </div>
+</section>
+<section id="r8">
+  <div class="req">
+    <div class="top"><span class="badge">Requirement 8</span><h3>Delivery Confirmation and Customer Notification</h3></div>
+    <div class="story"><b>User Story:</b> As an Administrator, I want to mark items delivered to me and notify the customer when their order is delivered, so that customers are kept informed.</div>
+    <ol class="ac">
+      <li><span class="kw when">WHEN</span> an Administrator marks a Bulk_Purchase as delivered to the Administrator, THE Delivery_Tracker <span class="kw shall">SHALL</span> record the delivered-to-admin timestamp for that Bulk_Purchase and set the Bulk_Purchase status to delivered-to-admin.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to mark a Bulk_Purchase as delivered to the Administrator and that Bulk_Purchase already has a delivered-to-admin timestamp, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the request, retain the existing timestamp, and return an error indicating that the Bulk_Purchase is already marked delivered.</li>
+      <li><span class="kw when">WHEN</span> an Administrator marks a Customer_Order as delivered to the Customer, THE Delivery_Tracker <span class="kw shall">SHALL</span> record the delivered-to-customer timestamp for that Customer_Order and set the Order_Status to Delivered_To_Customer.</li>
+      <li><span class="kw if">IF</span> an Administrator attempts to mark a Customer_Order as delivered to the Customer and that Customer_Order already has a delivered-to-customer timestamp, <span class="kw then">THEN</span> THE Delivery_Tracker <span class="kw shall">SHALL</span> reject the request, retain the existing timestamp, and return an error indicating that the Customer_Order is already marked delivered.</li>
+      <li><span class="kw when">WHEN</span> a Customer_Order is marked delivered to the Customer, THE Notification_Service <span class="kw shall">SHALL</span> send a delivery notification to the Customer associated with that Customer_Order within 60 seconds of the delivered-to-customer timestamp being recorded.</li>
+      <li><span class="kw if">IF</span> the Notification_Service fails to send a delivery notification to the Customer, <span class="kw then">THEN</span> THE Notification_Service <span class="kw shall">SHALL</span> retry delivery up to 3 times and, if all attempts fail, record the notification as failed and return an error indicating that the delivery notification could not be sent, while retaining the delivered-to-customer timestamp.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="deferred">
+  <h2>Out of Scope (Deferred to a Later Release)</h2>
+  <div class="deferred"><b>WhatsApp channel</b> &mdash; order intake, communication, or notification through WhatsApp. The MVP supports website intake only.</div>
+  <div class="deferred"><b>Automated purchasing and external platform API integrations</b> &mdash; programmatic order placement on external platforms and any API-based integration. The MVP supports manual recording of bulk purchases only.</div>
+</section>
+
+<footer>
+  Generated from the Order Management System requirements specification. Acceptance criteria follow the EARS format
+  (<span class="kw when">WHEN</span> / <span class="kw where">WHERE</span> / <span class="kw if">IF</span> / <span class="kw then">THEN</span> / <span class="kw shall">SHALL</span>).
+</footer>
+</main>
+</div>
+</body>
+</html>

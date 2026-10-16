@@ -1,0 +1,343 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order Management System - Design</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --panel2: #1d2435; --ink: #e6e9ef;
+    --muted: #9aa4b8; --line: #2a3346; --accent: #6ea8fe; --accent2: #7ee0c3;
+    --warn: #ffcf7a; --chip: #243049; --code: #0b0f18;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { display: grid; grid-template-columns: 268px 1fr; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 22px 18px;
+  }
+  nav h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  nav a { display: block; color: var(--ink); text-decoration: none; padding: 6px 10px; border-radius: 7px; font-size: 14px; }
+  nav a:hover { background: var(--chip); color: var(--accent); }
+  nav .brand { font-weight: 700; font-size: 16px; margin-bottom: 18px; color: #fff; }
+  nav .brand span { color: var(--accent); }
+  main { padding: 40px 48px 120px; max-width: 1040px; }
+  header.page { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 10px; }
+  header.page h1 { margin: 0 0 6px; font-size: 30px; }
+  header.page p { margin: 0; color: var(--muted); }
+  section { padding: 28px 0; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 22px; margin: 0 0 14px; color: #fff; }
+  section h3 { font-size: 17px; margin: 22px 0 8px; color: var(--accent2); }
+  p { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .chip { background: var(--chip); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin: 14px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h4 { margin: 0 0 6px; font-size: 15px; color: var(--accent); }
+  .card .ctx { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .card p { margin: 8px 0 0; font-size: 13.5px; color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; background: var(--panel2); }
+  tr:hover td { background: rgba(110,168,254,.05); }
+  code { background: var(--code); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; color: var(--accent2); }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 12.5px; line-height: 1.55; color: #cdd6e6; }
+  .diagram { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin: 14px 0; text-align: center; }
+  .goal { display: flex; gap: 10px; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent2); border-radius: 10px; padding: 12px 14px; margin: 8px 0; }
+  .goal b { color: var(--accent2); }
+  .prop { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 10px 0; }
+  .prop .n { display: inline-block; background: var(--accent); color: #07101f; font-weight: 700; border-radius: 7px; padding: 2px 9px; font-size: 12.5px; margin-right: 8px; }
+  .prop .req { margin-top: 8px; font-size: 12.5px; color: var(--warn); }
+  .deferred { background: rgba(255,207,122,.07); border: 1px solid rgba(255,207,122,.3); border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+  .deferred b { color: var(--warn); }
+  footer { color: var(--muted); font-size: 12.5px; padding-top: 24px; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav { position: static; height: auto; } main { padding: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Order <span>MS</span> &middot; Design</div>
+  <h2>Contents</h2>
+  <a href="#overview">Overview</a>
+  <a href="#stack">Technology Stack</a>
+  <a href="#goals">Design Goals</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#services">Services</a>
+  <a href="#events">Kafka & Events</a>
+  <a href="#image">Image Analysis</a>
+  <a href="#data">Data Models</a>
+  <a href="#scale">Scalability</a>
+  <a href="#errors">Error Handling</a>
+  <a href="#properties">Correctness Properties</a>
+  <a href="#testing">Testing Strategy</a>
+  <a href="#deferred">Deferred Items</a>
+</nav>
+<main>
+<header class="page">
+  <h1>Order Management System</h1>
+  <p>Design overview &mdash; drop-shipping fulfillment platform (Java &middot; Spring Boot &middot; Kafka &middot; Angular &middot; AI image matching)</p>
+</header>
+<section id="overview">
+  <h2>Overview</h2>
+  <p>Customers submit orders through a web app (and, in a later milestone, a mobile app). Administrators record manual bulk purchases from external platforms, receive and allocate bulk units to customer order lines, and track each order through a constrained lifecycle with dual delivery timing. When an order is delivered, the customer is notified.</p>
+  <p>The system is decomposed into scalable Spring Boot microservices (Java 21), one per bounded context, fronted by an API Gateway and connected by an Apache Kafka event backbone. A dedicated Image Analysis Service performs AI-based visual product matching for image-specified order lines. Clients are an Angular mobile-first web app; a mobile app is a planned later client reusing the same gateway and APIs.</p>
+</section>
+
+<section id="stack">
+  <h2>Technology Stack</h2>
+  <table>
+    <tr><th>Concern</th><th>Choice</th></tr>
+    <tr><td>Backend services</td><td>Java 21, Spring Boot 3.x (Web, Data JPA, Kafka, Validation)</td></tr>
+    <tr><td>Service topology</td><td>Microservices, one per bounded context + Image Analysis + API Gateway</td></tr>
+    <tr><td>API Gateway</td><td>Spring Cloud Gateway (routing, auth, rate limiting, BFF aggregation)</td></tr>
+    <tr><td>Eventing / messaging</td><td>Apache Kafka with Schema Registry; Avro / JSON Schema contracts</td></tr>
+    <tr><td>Reliable publishing</td><td>Transactional outbox pattern (atomic DB write + outbox row, relay to Kafka)</td></tr>
+    <tr><td>AI image analysis</td><td>Pluggable <code>VisionProvider</code> abstraction over a modern vision model</td></tr>
+    <tr><td>Frontend (web)</td><td>Angular, mobile-first responsive (customer portal + admin console)</td></tr>
+    <tr><td>Frontend (mobile)</td><td>Later milestone: Angular + Capacitor/Ionic (or native) reusing the gateway</td></tr>
+    <tr><td>Relational data</td><td>PostgreSQL, database-per-service</td></tr>
+    <tr><td>Object storage</td><td>S3-compatible bucket for uploaded images</td></tr>
+    <tr><td>Packaging & orchestration</td><td>Docker containers, Kubernetes, horizontal scaling</td></tr>
+    <tr><td>Observability</td><td>Structured logs, Prometheus metrics, OpenTelemetry tracing</td></tr>
+  </table>
+</section>
+
+<section id="goals">
+  <h2>Design Goals</h2>
+  <div class="goal"><div><b>Atomic writes</b> &mdash; every rejected submission persists nothing, enforced inside a single JPA transaction per service.</div></div>
+  <div class="goal"><div><b>Allocation safety</b> &mdash; allocations can never exceed received bulk quantity or requested customer quantity.</div></div>
+  <div class="goal"><div><b>Deterministic lifecycle</b> &mdash; order status only advances through defined, guarded transitions with a durable, append-only history.</div></div>
+  <div class="goal"><div><b>Auditable timing</b> &mdash; delivery durations are non-negative whole seconds from a single anchor date.</div></div>
+  <div class="goal"><div><b>Reliable eventing</b> &mdash; state changes are published via the transactional outbox so a committed write and its event are never out of sync.</div></div>
+  <div class="goal"><div><b>Horizontal scalability</b> &mdash; stateless services scale out via Kubernetes and consume Kafka in consumer groups with idempotent handlers.</div></div>
+</section>
+<section id="architecture">
+  <h2>Architecture</h2>
+  <p class="muted">Angular web + future mobile clients talk REST/JSON to a single API Gateway, which routes to stateless microservices. Services communicate asynchronously over Kafka and each owns its own PostgreSQL database.</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  WEB["Angular Web App<br/>(customer + admin, mobile-first)"]
+  MOB["Mobile App<br/>(later milestone)"]
+  GW["API Gateway<br/>Spring Cloud Gateway"]
+  WEB --> GW
+  MOB --> GW
+  GW --> ORD["order-service"]
+  GW --> INT["intake-service"]
+  GW --> ADM["admin-bff-service"]
+  GW --> ALL["allocation-service"]
+  GW --> DEL["delivery-service"]
+  ORD --> ORDDB[("order_pg")]
+  INT --> INTDB[("intake_pg")]
+  ALL --> ALLDB[("alloc_pg")]
+  DEL --> DELDB[("delivery_pg")]
+  ORD -. events .-> K{{"Apache Kafka<br/>+ Schema Registry<br/>+ outbox"}}
+  INT -. events .-> K
+  ALL -. events .-> K
+  DEL -. events .-> K
+  K -. image-upload .-> IMG["image-analysis-service"]
+  K -. notify .-> NOT["notification-service"]
+  IMG --> IMGDB[("image_pg")]
+  IMG --> OBJ[("Object Storage S3")]
+  NOT --> NOTDB[("notif_pg")]
+  NOT --> CUST(["Customer notification"])
+    </pre>
+  </div>
+
+  <h3>Services and Bounded Contexts</h3>
+  <table>
+    <tr><th>Service</th><th>Context</th><th>Owns</th><th>Responsibility</th></tr>
+    <tr><td><code>intake-service</code></td><td>Order intake</td><td>intake_pg</td><td>Validate website submissions atomically; coordinate image-upload handoff; forward valid orders.</td></tr>
+    <tr><td><code>order-service</code></td><td>Order & catalog</td><td>order_pg</td><td>Authoritative store of Customer, Order, OrderLine; enforce invariants; assign immutable order ids.</td></tr>
+    <tr><td><code>admin-bff-service</code></td><td>Administration / BFF</td><td>none</td><td>Admin operations and read aggregation for the console; delegates domain logic.</td></tr>
+    <tr><td><code>allocation-service</code></td><td>Allocation</td><td>alloc_pg</td><td>Record received bulk quantities; create allocations; enforce over-allocation guards; detect full allocation.</td></tr>
+    <tr><td><code>delivery-service</code></td><td>Delivery & lifecycle</td><td>delivery_pg</td><td>Transition order status; append-only history; mark deliveries; compute dual durations.</td></tr>
+    <tr><td><code>notification-service</code></td><td>Notification</td><td>notif_pg</td><td>Consume NotificationRequested; send with bounded retry and failure recording.</td></tr>
+    <tr><td><code>image-analysis-service</code></td><td>Visual matching</td><td>image_pg</td><td>Consume image-upload events; run the vision model; emit candidate matches with confidence.</td></tr>
+    <tr><td><code>api-gateway</code></td><td>Edge</td><td>none</td><td>Routing, auth, rate limiting, BFF aggregation; single public entry point.</td></tr>
+  </table>
+
+  <h3>Request Flows</h3>
+  <div class="grid">
+    <div class="card"><div class="ctx">Intake</div><h4>Order submission</h4><p>Client calls the gateway; for image lines the image is validated, stored, and an <code>ImageUploaded</code> event is published for AI matching. On confirmation, intake validates all lines and calls order-service in one transaction; <code>OrderCreated</code> drives status <code>Created</code>.</p></div>
+    <div class="card"><div class="ctx">Allocation</div><h4>Bulk purchase &rarr; allocate</h4><p>Admin records a bulk purchase atomically. Received units are logged and allocations created under both guards. When all lines are fully allocated, <code>OrderFullyAllocated</code> moves the order to <code>Allocated</code>.</p></div>
+    <div class="card"><div class="ctx">Delivery</div><h4>Deliver &rarr; notify</h4><p>Delivery marks record timestamps, compute durations, and guard double-marking. Marking an order delivered sets <code>Delivered_To_Customer</code> and emits <code>NotificationRequested</code>, triggering the customer notification within 60s with retry.</p></div>
+  </div>
+</section>
+<section id="events">
+  <h2>Event-Driven Architecture & Kafka Topics</h2>
+  <p class="muted">Each producing service writes domain state and an outbox row in the same transaction; a relay publishes committed rows to Kafka, so a persisted change and its event stay consistent.</p>
+  <table>
+    <tr><th>Topic</th><th>Key</th><th>Producer</th><th>Consumers</th><th>Event</th></tr>
+    <tr><td><code>oms.orders.created</code></td><td>orderId</td><td>order-service</td><td>delivery-service</td><td>OrderCreated</td></tr>
+    <tr><td><code>oms.orders.fully-allocated</code></td><td>orderId</td><td>allocation-service</td><td>delivery-service</td><td>OrderFullyAllocated</td></tr>
+    <tr><td><code>oms.bulk.received</code></td><td>bulkPurchaseId</td><td>allocation-service</td><td>analytics (future)</td><td>BulkPurchaseReceived</td></tr>
+    <tr><td><code>oms.orders.delivered</code></td><td>orderId</td><td>delivery-service</td><td>notification-service</td><td>OrderDeliveredToCustomer</td></tr>
+    <tr><td><code>oms.notifications.requested</code></td><td>orderId</td><td>delivery-service (outbox)</td><td>notification-service</td><td>NotificationRequested</td></tr>
+    <tr><td><code>oms.images.uploaded</code></td><td>imageId</td><td>intake-service</td><td>image-analysis-service</td><td>ImageUploaded</td></tr>
+    <tr><td><code>oms.images.match-suggested</code></td><td>imageId</td><td>image-analysis-service</td><td>intake / admin-bff</td><td>ImageMatchSuggested</td></tr>
+  </table>
+  <h3>Consumer Scalability & Idempotency</h3>
+  <div class="grid">
+    <div class="card"><h4>Consumer groups</h4><p>Each service consumes as a named group; adding replicas increases parallelism up to the partition count.</p></div>
+    <div class="card"><h4>Partitioning</h4><p>Topics keyed by aggregate id (orderId, bulkPurchaseId, imageId) so events for one aggregate stay ordered on one partition.</p></div>
+    <div class="card"><h4>Idempotent handlers</h4><p>Consumers dedupe on a processed-event table, so at-least-once redelivery is a safe no-op &mdash; underpinning guarded single-shot delivery.</p></div>
+  </div>
+</section>
+
+<section id="image">
+  <h2>Image Analysis Flow (AI)</h2>
+  <p>The Image Analysis Service performs AI-based visual product matching for order lines specified by image. The concrete model sits behind a pluggable <code>VisionProvider</code> interface so it can be swapped without touching callers.</p>
+  <pre>public interface VisionProvider {
+    // Returns candidate item matches with confidence scores for an uploaded image.
+    List&lt;ItemCandidate&gt; matchProduct(ImageRef image);
+}
+
+public record ItemCandidate(String itemRef, double confidence) {}  // confidence in [0, 1]</pre>
+  <ol class="muted">
+    <li>intake-service validates the image (JPEG/PNG, &le;10&nbsp;MB), stores it, and publishes <code>ImageUploaded</code>.</li>
+    <li>image-analysis-service consumes it, loads the image, and calls <code>VisionProvider.matchProduct</code>.</li>
+    <li>It emits <code>ImageMatchSuggested</code> with candidates and confidence scores.</li>
+    <li>The customer or an admin confirms the match; the confirmed item is attached to the order line before creation.</li>
+  </ol>
+</section>
+<section id="data">
+  <h2>Data Models</h2>
+  <p class="muted">Each service owns its data in its own PostgreSQL schema. Cross-service references are stored as plain id values (no cross-database foreign keys); consistency is maintained through events.</p>
+
+  <h3>order-service (order_pg)</h3>
+  <pre>Customer           { customerId (unique), contact }
+CustomerOrder      { orderId (unique, immutable), customerId, orderStatus,
+                     deliveredToCustomerAt?, adminToCustomerDurationSeconds? }
+CustomerOrderLine  { orderLineId, orderId, itemRef, requestedQty 1..999,999,
+                     fullyAllocated }
+Item               { itemRef, spec: SearchTerm(1..200) | Image(objectKey) }</pre>
+
+  <h3>allocation-service (alloc_pg)</h3>
+  <pre>BulkPurchase       { bulkId, platformName 1..100, placementDate &le; today,
+                     status, deliveredToAdminAt?, platformToAdminDurationSeconds? }
+BulkPurchaseLine   { bulkLineId, bulkId, itemRef, purchasedQty 1..1,000,000,
+                     unitCost 0.01..999,999,999.99, receivedQty &ge; 0 }
+Allocation         { allocationId, bulkLineId (source), orderLineId (target),
+                     quantity &ge; 1 }</pre>
+
+  <h3>delivery-service (delivery_pg)</h3>
+  <pre>StatusTransitionRecord { id, orderId, priorStatus, newStatus, timestamp }
+                         // append-only history</pre>
+
+  <h3>Shared: Transactional Outbox (per producing service)</h3>
+  <pre>OutboxEvent { eventId, aggregateId (partition key), topic, payload,
+              occurredAt, published }
+            // written in the SAME transaction as the domain change</pre>
+
+  <h3>Key Relationships</h3>
+  <ul class="muted">
+    <li>One Customer &rarr; many Orders; one Order &rarr; exactly one Customer.</li>
+    <li>One Order &rarr; 1..100 OrderLines at intake; a line quantity up to 999,999.</li>
+    <li>One BulkPurchase &rarr; 1..500 BulkPurchaseLines.</li>
+    <li>Allocation is the many-to-many bridge between BulkPurchaseLine and OrderLine.</li>
+  </ul>
+
+  <h3>Order Lifecycle</h3>
+  <div class="diagram">
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Created
+  Created --> Allocated: all lines fully allocated
+  Allocated --> Delivered_To_Customer: marked delivered
+    </pre>
+  </div>
+</section>
+
+<section id="scale">
+  <h2>Scalability & Deployment</h2>
+  <div class="grid">
+    <div class="card"><h4>Stateless services</h4><p>Auth/session state lives in tokens validated at the gateway; any replica serves any request.</p></div>
+    <div class="card"><h4>Horizontal scaling</h4><p>Kubernetes Deployments with replicas; HPA reacts to CPU/latency and Kafka consumer lag.</p></div>
+    <div class="card"><h4>Kafka parallelism</h4><p>Consumer groups; partition count sets max parallelism; aggregate-id keying preserves per-order ordering.</p></div>
+    <div class="card"><h4>Idempotent consumers</h4><p>At-least-once delivery made safe via a processed-event dedup table.</p></div>
+    <div class="card"><h4>Database-per-service</h4><p>No shared-DB coupling; read-heavy paths can use short-TTL caches.</p></div>
+    <div class="card"><h4>Object storage</h4><p>Images in an S3-compatible bucket, keeping large binaries out of PostgreSQL.</p></div>
+    <div class="card"><h4>Containers & orchestration</h4><p>Docker images; Kubernetes with liveness/readiness probes and rolling updates.</p></div>
+    <div class="card"><h4>Observability</h4><p>Structured logs, Prometheus metrics, OpenTelemetry tracing across gateway &rarr; service &rarr; Kafka.</p></div>
+    <div class="card"><h4>Mobile readiness</h4><p>All access is REST/JSON through the gateway, so the later mobile app reuses the same backend with no server changes.</p></div>
+  </div>
+</section>
+<section id="errors">
+  <h2>Error Handling</h2>
+  <p class="muted">All operations return a typed result (success body, or a ValidationError / DomainError with an HTTP 4xx status). No partial state is written on error.</p>
+  <table>
+    <tr><th>Condition</th><th>Req</th><th>Handling</th></tr>
+    <tr><td>Order with zero / &gt;100 lines</td><td>1.6, 1.10</td><td>Reject, persist nothing, line-count validation error.</td></tr>
+    <tr><td>Invalid quantity / missing item spec / invalid image</td><td>1.7-1.9</td><td>Reject whole submission atomically, name the affected line.</td></tr>
+    <tr><td>Missing/invalid customer or item reference</td><td>2.5, 2.6</td><td>Reject, persist no part of the order.</td></tr>
+    <tr><td>Select nonexistent order</td><td>3.4</td><td>Not-found error (HTTP 404).</td></tr>
+    <tr><td>Invalid status value</td><td>3.6</td><td>Reject, retain previous status.</td></tr>
+    <tr><td>Invalid bulk purchase fields / zero lines</td><td>4.5-4.9</td><td>Reject atomically, persist no part.</td></tr>
+    <tr><td>Over-allocation (bulk or customer side)</td><td>5.5, 5.6</td><td>Reject, leave all totals unchanged.</td></tr>
+    <tr><td>Invalid allocated quantity</td><td>5.8</td><td>Reject, create no allocation.</td></tr>
+    <tr><td>Deliver order not in Allocated</td><td>6.5</td><td>Reject, status unchanged.</td></tr>
+    <tr><td>Delivery with missing placement date</td><td>7.5, 7.6</td><td>Reject, record no timestamp.</td></tr>
+    <tr><td>Delivered timestamp precedes placement</td><td>7.7</td><td>Reject with invalid-timestamp error.</td></tr>
+    <tr><td>Re-mark already-delivered bulk/order</td><td>8.2, 8.4</td><td>Reject, retain existing timestamp.</td></tr>
+    <tr><td>Notification send fails</td><td>8.6</td><td>Retry up to 3 times, then record failed state, retain timestamp.</td></tr>
+  </table>
+</section>
+
+<section id="properties">
+  <h2>Correctness Properties</h2>
+  <p class="muted">Behavioral invariants validated by property-based tests (jqwik, min 100 iterations each). They hold regardless of the implementation stack.</p>
+  <div class="prop"><span class="n">P1</span><b>Valid order intake is accepted and recorded faithfully</b><div class="req">Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5</div></div>
+  <div class="prop"><span class="n">P2</span><b>Invalid order intake is rejected atomically</b><div class="req">Validates: Requirements 1.6, 1.7, 1.8, 1.9, 1.10, 2.5, 2.6, 2.7</div></div>
+  <div class="prop"><span class="n">P3</span><b>Order ownership structural integrity</b><div class="req">Validates: Requirements 2.1, 2.2, 2.3</div></div>
+  <div class="prop"><span class="n">P4</span><b>Order identifiers are unique and immutable</b><div class="req">Validates: Requirements 2.4</div></div>
+  <div class="prop"><span class="n">P5</span><b>Order listing and detail are complete projections</b><div class="req">Validates: Requirements 3.1, 3.3</div></div>
+  <div class="prop"><span class="n">P6</span><b>Status update round-trip and invalid-value rejection</b><div class="req">Validates: Requirements 3.5, 3.6</div></div>
+  <div class="prop"><span class="n">P7</span><b>Valid bulk purchase is recorded faithfully</b><div class="req">Validates: Requirements 4.1, 4.2, 4.3, 4.4</div></div>
+  <div class="prop"><span class="n">P8</span><b>Invalid bulk purchase is rejected atomically</b><div class="req">Validates: Requirements 4.5, 4.6, 4.7, 4.8, 4.9</div></div>
+  <div class="prop"><span class="n">P9</span><b>Allocation totals equal the sum of their allocations</b><div class="req">Validates: Requirements 5.1, 5.2, 5.3, 5.4</div></div>
+  <div class="prop"><span class="n">P10</span><b>Allocation never over-allocates and rejected attempts change nothing</b><div class="req">Validates: Requirements 5.5, 5.6, 5.8</div></div>
+  <div class="prop"><span class="n">P11</span><b>Full-allocation detection is exact</b><div class="req">Validates: Requirements 5.7</div></div>
+  <div class="prop"><span class="n">P12</span><b>Status transitions are valid and the lifecycle is constrained</b><div class="req">Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5</div></div>
+  <div class="prop"><span class="n">P13</span><b>Transition history is complete and append-only</b><div class="req">Validates: Requirements 6.6, 6.7</div></div>
+  <div class="prop"><span class="n">P14</span><b>Delivery durations are non-negative whole seconds and stored</b><div class="req">Validates: Requirements 7.1, 7.2, 7.3, 7.4</div></div>
+  <div class="prop"><span class="n">P15</span><b>Invalid delivery timing is rejected</b><div class="req">Validates: Requirements 7.5, 7.6, 7.7</div></div>
+  <div class="prop"><span class="n">P16</span><b>Delivery marking is a guarded single-shot operation</b><div class="req">Validates: Requirements 8.1, 8.2, 8.3, 8.4</div></div>
+  <div class="prop"><span class="n">P17</span><b>Notification retry is bounded and failure is recorded</b><div class="req">Validates: Requirements 8.6</div></div>
+</section>
+
+<section id="testing">
+  <h2>Testing Strategy</h2>
+  <p class="muted">A dual approach: property-based tests for universal invariants and example/integration tests for specific scenarios and side effects.</p>
+  <div class="grid">
+    <div class="card"><h4>Property-based (jqwik)</h4><p>Intake validation, data-model invariants, allocation arithmetic/guards, lifecycle, duration computation, notification retry. Min 100 iterations each; boundary values generated deliberately.</p></div>
+    <div class="card"><h4>Example (JUnit 5 + AssertJ)</h4><p>Empty order list returns empty without error; nonexistent order returns not-found; a new order reports status Created.</p></div>
+    <div class="card"><h4>Integration (Spring Boot + Testcontainers)</h4><p>Notification within the 60s window (mock sender + controllable clock); outbox publish-after-commit with idempotent redelivery; image upload &rarr; match round trip with a stub VisionProvider.</p></div>
+  </div>
+</section>
+
+<section id="deferred">
+  <h2>Deferred Items</h2>
+  <div class="deferred"><b>WhatsApp channel</b> &mdash; order intake, communication, or notification through WhatsApp. The MVP supports website intake only.</div>
+  <div class="deferred"><b>Automated purchasing / platform API integrations</b> &mdash; programmatic order placement on external platforms. The MVP supports manual bulk-purchase recording only.</div>
+  <div class="deferred"><b>Mobile application</b> &mdash; a planned later milestone. The architecture already accommodates it: the mobile client reuses the same API Gateway and contracts, so no server-side redesign is required.</div>
+</section>
+
+<footer>
+  Generated from the Order Management System design specification. Diagrams rendered with Mermaid.
+</footer>
+</main>
+</div>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "dark", themeVariables: { primaryColor: "#1d2435", primaryTextColor: "#e6e9ef", lineColor: "#6ea8fe", fontSize: "13px" } });
+</script>
+</body>
+</html>

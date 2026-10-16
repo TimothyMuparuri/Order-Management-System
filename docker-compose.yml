@@ -1,0 +1,74 @@
+services:
+  postgres-order:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: order_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5432:5432"]
+
+  postgres-intake:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: intake_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5433:5432"]
+
+  postgres-alloc:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: alloc_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5434:5432"]
+
+  postgres-delivery:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: delivery_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5435:5432"]
+
+  postgres-notif:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notif_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5436:5432"]
+
+  postgres-image:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: image_pg
+      POSTGRES_USER: oms
+      POSTGRES_PASSWORD: oms
+    ports: ["5437:5432"]
+
+  kafka:
+    image: apache/kafka-native:3.8.0
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: oms
+      MINIO_ROOT_PASSWORD: omssecret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
