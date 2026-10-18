@@ -30,7 +30,5 @@ public abstract class IntegrationTestBase {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.kafka.bootstrap-servers", KAFKA::getBootstrapServers);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
-        registry.add("oms.outbox.relay.enabled", () -> "true");
-        registry.add("oms.outbox.relay.delay-ms", () -> "200");
     }
 }

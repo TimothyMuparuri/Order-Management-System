@@ -11,7 +11,7 @@ import com.oms.delivery.repo.StatusTransitionRecordRepository;
 import com.oms.eventing.Topics;
 import com.oms.eventing.events.Events;
 import com.oms.eventing.idempotency.IdempotentConsumer;
-import com.oms.eventing.outbox.OutboxWriter;
+import com.oms.eventing.publish.DomainEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,20 +26,20 @@ public class DeliveryApplicationService {
 
     private final OrderLifecycleRepository lifecycleRepository;
     private final StatusTransitionRecordRepository transitionRepository;
-    private final OutboxWriter outboxWriter;
+    private final DomainEventPublisher events;
     private final IdempotentConsumer idempotentConsumer;
     private final ObjectMapper objectMapper;
 
     public DeliveryApplicationService(
             OrderLifecycleRepository lifecycleRepository,
             StatusTransitionRecordRepository transitionRepository,
-            OutboxWriter outboxWriter,
+            DomainEventPublisher events,
             IdempotentConsumer idempotentConsumer,
             ObjectMapper objectMapper
     ) {
         this.lifecycleRepository = lifecycleRepository;
         this.transitionRepository = transitionRepository;
-        this.outboxWriter = outboxWriter;
+        this.events = events;
         this.idempotentConsumer = idempotentConsumer;
         this.objectMapper = objectMapper;
     }
@@ -114,9 +114,9 @@ public class DeliveryApplicationService {
         transitionRepository.save(new StatusTransitionRecord(
                 orderId, prior, OrderStatus.Delivered_To_Customer, deliveredAt));
 
-        outboxWriter.enqueue(orderId, Topics.ORDERS_DELIVERED, new Events.OrderDeliveredToCustomer(
+        events.publish(orderId, Topics.ORDERS_DELIVERED, new Events.OrderDeliveredToCustomer(
                 orderId, lifecycle.getCustomerId(), deliveredAt.toEpochMilli(), seconds));
-        outboxWriter.enqueue(orderId, Topics.NOTIFICATIONS_REQUESTED, new Events.NotificationRequested(
+        events.publish(orderId, Topics.NOTIFICATIONS_REQUESTED, new Events.NotificationRequested(
                 orderId, lifecycle.getCustomerId(), deliveredAt.toEpochMilli()));
 
         return Result.ok(new DeliveryMarkResponse(orderId, seconds, OrderStatus.Delivered_To_Customer));

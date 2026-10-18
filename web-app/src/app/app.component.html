@@ -1,12 +1,83 @@
-<div class="shell">
-  <header class="top">
-    <a routerLink="/" class="brand">Order <span>MS</span></a>
-    <nav>
-      <a routerLink="/orders/new" routerLinkActive="active">Customer</a>
-      <a routerLink="/admin" routerLinkActive="active">Admin</a>
-    </nav>
+@if (!isAdmin()) {
+  <div class="promo">Free delivery on orders over <b>R750</b> · One checkout for every store below</div>
+
+  <header class="site">
+    <div class="wrap nav">
+      <a routerLink="/" class="brand" aria-label="sapersonalshopper home">
+        <img class="brand-mark" src="logo.svg" width="36" height="36" alt="" />
+        <span class="brand-word"><span class="brand-sa">sa</span>personalshopper</span>
+      </a>
+      <nav class="nav-links">
+        <a routerLink="/" fragment="sale">Sale</a>
+        <a routerLink="/stores" routerLinkActive="active">Stores</a>
+        <a routerLink="/" fragment="categories">Categories</a>
+        <a routerLink="/" fragment="how">How it works</a>
+      </nav>
+      <form class="nav-search" (submit)="search($event)">
+        <span class="nav-search-icon" aria-hidden="true">⌕</span>
+        <input [(ngModel)]="query" name="q" placeholder="Search Takealot, Zara, Le Creuset…" aria-label="Search products" />
+      </form>
+      <div class="nav-actions">
+        <a class="icon-btn" routerLink="/orders/track" routerLinkActive="active" title="Track order">⟳</a>
+        <a class="icon-btn" routerLink="/admin" routerLinkActive="active" title="Admin">AD</a>
+        <a class="btn btn-primary cart-btn" routerLink="/orders/new" routerLinkActive="active">
+          Cart
+          @if (cart.itemCount() > 0) {
+            <span class="cart-count">{{ cart.itemCount() }}</span>
+          }
+        </a>
+      </div>
+    </div>
+    <div class="search-cats wrap" role="navigation" aria-label="Shop by category">
+      @for (c of searchCategories; track c.id) {
+        <button type="button" class="search-cat" (click)="openCategory(c.id)">{{ c.label }}</button>
+      }
+    </div>
   </header>
-  <main>
-    <router-outlet />
-  </main>
-</div>
+}
+
+<main [class.admin-root]="isAdmin()">
+  <router-outlet />
+</main>
+
+@if (!isAdmin()) {
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="foot-grid">
+        <div>
+          <a routerLink="/" class="brand" aria-label="sapersonalshopper home">
+            <img class="brand-mark" src="logo.svg" width="36" height="36" alt="" />
+            <span class="brand-word"><span class="brand-sa">sa</span>personalshopper</span>
+          </a>
+          <p class="foot-blurb">South Africa's favourite stores, one checkout, one delivery.</p>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <a routerLink="/" fragment="sale">Sale</a>
+          <a routerLink="/" fragment="categories">Categories</a>
+          <a routerLink="/stores">All stores</a>
+          <a routerLink="/orders/new">Place an order</a>
+        </div>
+        <div>
+          <h4>Stores</h4>
+          @for (s of footerStores; track s.name) {
+            <a [href]="s.url" target="_blank" rel="noopener">{{ s.name }}</a>
+          }
+        </div>
+        <div>
+          <h4>Help</h4>
+          <a routerLink="/orders/track">Track order</a>
+          <a routerLink="/" fragment="how">How it works</a>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a routerLink="/admin">Admin desk</a>
+        </div>
+      </div>
+      <div class="foot-base">
+        <span>© 2026 sapersonalshopper · Johannesburg, South Africa</span>
+        <span>Store names are trademarks of their owners. Prices shown on the homepage were checked {{ pricesChecked }}.</span>
+      </div>
+    </div>
+  </footer>
+}

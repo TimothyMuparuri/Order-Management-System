@@ -1,0 +1,94 @@
+@if (error()) {
+  <p class="banner err">{{ error() }}</p>
+}
+
+<section class="stats">
+  <article class="stat">
+    <span class="lbl">All orders</span>
+    <strong>{{ stats().total }}</strong>
+    <p>In the desk</p>
+  </article>
+  <article class="stat accent">
+    <span class="lbl">Need buying</span>
+    <strong>{{ stats().neu }}</strong>
+    <p>Status: new</p>
+  </article>
+  <article class="stat">
+    <span class="lbl">Packed</span>
+    <strong>{{ stats().packed }}</strong>
+    <p>Ready to deliver</p>
+  </article>
+  <article class="stat">
+    <span class="lbl">Delivered</span>
+    <strong>{{ stats().delivered }}</strong>
+    <p>Completed</p>
+  </article>
+  <article class="stat wa">
+    <span class="lbl">WhatsApp</span>
+    <strong>{{ stats().whatsapp }}</strong>
+    <p>From chat intake</p>
+  </article>
+  <article class="stat">
+    <span class="lbl">Pipeline value</span>
+    <strong>{{ rand(stats().revenue) }}</strong>
+    <p>Sum of order totals</p>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Quick actions</h2>
+      <p class="muted">Jump to the job you need to do next.</p>
+    </div>
+  </div>
+  <div class="actions">
+    <a routerLink="/admin/orders" [queryParams]="{ filter: 'Created' }" class="action">
+      <b>Buy new orders</b>
+      <span>{{ stats().neu }} waiting</span>
+    </a>
+    <a routerLink="/admin/whatsapp" class="action wa">
+      <b>Log a WhatsApp order</b>
+      <span>Paste products from chat</span>
+    </a>
+    <a routerLink="/admin/orders" [queryParams]="{ filter: 'WhatsApp' }" class="action">
+      <b>WhatsApp inbox</b>
+      <span>{{ stats().whatsapp }} tagged</span>
+    </a>
+    <a routerLink="/admin/orders" class="action">
+      <b>Full fulfilment desk</b>
+      <span>Inbox + order detail</span>
+    </a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Recent orders</h2>
+      <p class="muted">Latest arrivals — open any row to fulfil.</p>
+    </div>
+    <button type="button" class="ghost" (click)="reload()" [disabled]="loading()">
+      {{ loading() ? 'Loading…' : 'Refresh' }}
+    </button>
+  </div>
+
+  @if (!recent().length && !loading()) {
+    <p class="muted empty">No orders yet. Create one from WhatsApp or wait for a website checkout.</p>
+  } @else {
+    <div class="table">
+      @for (o of recent(); track o.orderId) {
+        <a class="row" [routerLink]="['/admin/orders']" [queryParams]="{ open: o.orderId }">
+          <div class="who">
+            <strong>{{ o.customerName || 'Customer' }}</strong>
+            <span>#{{ shortId(o.orderId) }}</span>
+          </div>
+          <span class="source" [attr.data-src]="o.source || 'Web'">{{ labelSource(o.source) }}</span>
+          <span class="status">{{ labelStatus(o.orderStatus) }}</span>
+          <span class="phone">{{ o.phone || '—' }}</span>
+          <strong class="amt">{{ rand(o.orderTotal) }}</strong>
+        </a>
+      }
+    </div>
+  }
+</section>

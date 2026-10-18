@@ -1,0 +1,106 @@
+<section class="wa-page">
+  <div class="intro">
+    <h2>Log an order from WhatsApp</h2>
+    <p class="muted">
+      Paste what the customer sent in chat. Creates the same order record as the website, tagged WhatsApp,
+      then opens it on the fulfilment desk.
+    </p>
+  </div>
+
+  @if (message()) { <p class="ok banner">{{ message() }}</p> }
+  @if (error()) { <p class="err banner">{{ error() }}</p> }
+
+  <div class="card">
+    <h3>Customer</h3>
+    <div class="grid">
+      <label>
+        Customer name
+        <input [(ngModel)]="waName" name="waName" placeholder="e.g. Thandi Nkosi" maxlength="200" />
+      </label>
+      <label>
+        WhatsApp / phone
+        <input [(ngModel)]="waPhone" name="waPhone" type="tel" placeholder="e.g. 082 123 4567" maxlength="40" />
+      </label>
+      <label>
+        Email <span class="opt">(optional)</span>
+        <input [(ngModel)]="waEmail" name="waEmail" type="email" placeholder="optional" maxlength="200" />
+      </label>
+      <label>
+        Delivery address <span class="opt">(optional)</span>
+        <input [(ngModel)]="waAddress" name="waAddress" placeholder="Street, suburb, city" maxlength="400" />
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Products to buy</h3>
+      <button type="button" class="ghost" (click)="addLine()">+ Add product</button>
+    </div>
+
+    @for (line of waLines; track $index) {
+      <div class="line">
+        <div class="line-main">
+          <div class="photo">
+            @if (line.previewUrl || line.imageUrl) {
+              <img [src]="line.previewUrl || line.imageUrl!" alt="Product photo" />
+            } @else {
+              <span>No photo</span>
+            }
+            <label class="photo-btn">
+              {{ line.uploading ? 'Uploading…' : line.imageId ? 'Change photo' : 'Upload photo' }}
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                [disabled]="!!line.uploading"
+                (change)="onImageSelected($index, $event)"
+              />
+            </label>
+            @if (line.imageId || line.previewUrl) {
+              <button type="button" class="ghost danger tiny" (click)="clearImage($index)" [disabled]="!!line.uploading">
+                Remove photo
+              </button>
+            }
+          </div>
+
+          <div class="line-grid">
+            <label class="wide">
+              Product name
+              <input [(ngModel)]="line.productName" [name]="'pn' + $index" placeholder="e.g. Steve Madden Bassett sneaker" />
+            </label>
+            <label>
+              Store
+              <input [(ngModel)]="line.storeName" [name]="'st' + $index" placeholder="Takealot / Zara…" />
+            </label>
+            <label>
+              Size
+              <input [(ngModel)]="line.productSize" [name]="'sz' + $index" placeholder="e.g. 7 / M" />
+            </label>
+            <label>
+              Qty
+              <input type="number" [(ngModel)]="line.quantity" [name]="'qty' + $index" min="1" max="10000" />
+            </label>
+            <label>
+              Unit price (R)
+              <input [(ngModel)]="line.unitPrice" [name]="'pr' + $index" placeholder="695" />
+            </label>
+            <label class="wide">
+              Product link
+              <input [(ngModel)]="line.productUrl" [name]="'url' + $index" placeholder="https://…" />
+            </label>
+          </div>
+        </div>
+        <button type="button" class="ghost danger" (click)="removeLine($index)" [disabled]="waLines.length === 1">
+          Remove line
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="footer-actions">
+    <a routerLink="/admin/orders" class="ghost-link">Cancel to orders</a>
+    <button type="button" class="submit" (click)="submit()" [disabled]="saving()">
+      {{ saving() ? 'Creating…' : 'Create WhatsApp order' }}
+    </button>
+  </div>
+</section>

@@ -6,7 +6,7 @@ Java 21 + Spring Boot 3.x drop-shipping OMS from `.kiro/specs/order-management-s
 
 | Module | Port | Role |
 |--------|------|------|
-| `oms-common` / `oms-eventing` | — | Shared types, outbox, Kafka helpers |
+| `oms-common` / `oms-eventing` | — | Shared types, after-commit Kafka publish, idempotency |
 | `order-service` | 8081 | Authoritative orders |
 | `intake-service` | 8082 | Website intake + image upload |
 | `admin-bff-service` | 8083 | Admin aggregation / short-TTL cache |

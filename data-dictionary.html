@@ -65,53 +65,61 @@
   <a href="#architecture">System architecture</a>
   <a href="#lifecycle">Order lifecycle</a>
   <a href="#events">Kafka events</a>
-  <h2>Databases</h2>
-  <a href="#order-pg">order_pg</a>
-  <a href="#alloc-pg">alloc_pg</a>
-  <a href="#delivery-pg">delivery_pg</a>
-  <a href="#notif-pg">notif_pg</a>
-  <a href="#shared">Shared outbox / dedup</a>
-  <a href="#stateless">Stateless services</a>
+  <h2>Shared database <code>oms</code></h2>
+  <a href="#order-pg">Order tables</a>
+  <a href="#alloc-pg">Allocation tables</a>
+  <a href="#delivery-pg">Delivery tables</a>
+  <a href="#notif-pg">Notification tables</a>
+  <a href="#shared">Idempotency (processed_event)</a>
+  <a href="#stateless">Other services</a>
   <h2>Processing</h2>
   <a href="#flows">End-to-end flows</a>
 </nav>
 <main>
 <header class="page">
   <h1>Architecture &amp; Data Dictionary</h1>
-  <p>Every PostgreSQL database, table, field, and how that data is written and consumed in the Order Management System.</p>
+  <p>Every table in the shared <code>oms</code> database, each field, and how that data is written and consumed in the Order Management System.</p>
 </header>
 
 <section id="architecture">
   <h2>System architecture</h2>
-  <p class="muted">Clients talk REST/JSON to one API Gateway. Each bounded context is a Spring Boot service with its own PostgreSQL database. Domain changes publish through a transactional outbox onto Kafka.</p>
+  <p class="muted">Clients talk REST/JSON to one API Gateway. All Spring Boot services share <strong>one</strong> database (<code>oms</code>). After a successful commit, producers publish domain events directly to Kafka via <code>DomainEventPublisher</code>. Same diagram as <code>design.html</code>.</p>
   <div class="diagram">
     <pre class="mermaid">
 flowchart TD
-  WEB["Angular web / Capacitor mobile"]
+  WEB["Angular Web App<br/>(customer + admin, mobile-first)"]
+  MOB["Mobile App<br/>(later milestone)"]
   GW["api-gateway<br/>Spring Cloud Gateway"]
   WEB --> GW
+  MOB --> GW
   GW --> INT["intake-service"]
   GW --> ORD["order-service"]
-  GW --> ADM["admin-bff-service<br/>no DB"]
+  GW --> ADM["admin-bff-service"]
   GW --> ALL["allocation-service"]
   GW --> DEL["delivery-service"]
-  ORD --> ORDDB[("order_pg")]
-  ALL --> ALLDB[("alloc_pg")]
-  DEL --> DELDB[("delivery_pg")]
-  INT --> S3[("Object storage / S3")]
-  ORD -. outbox .-> K{{"Apache Kafka"}}
-  INT -. outbox .-> K
-  ALL -. outbox .-> K
-  DEL -. outbox .-> K
+  DB[("Shared DB · oms<br/>H2 file or Postgres")]
+  INT --> DB
+  ORD --> DB
+  ADM --> DB
+  ALL --> DB
+  DEL --> DB
+  IMG --> DB
+  NOT --> DB
+  INT --> OBJ[("Object storage S3")]
+  ORD -. after commit .-> K{{"Apache Kafka"}}
+  INT -. after commit .-> K
+  ALL -. after commit .-> K
+  DEL -. after commit .-> K
+  IMG -. after commit .-> K
   K --> IMG["image-analysis-service"]
   K --> NOT["notification-service"]
   K --> ALL
   K --> DEL
-  NOT --> NOTDB[("notif_pg")]
-  IMG --> IMGDB[("image_pg / outbox")]
+  IMG --> OBJ
+  NOT --> CUST(["Customer notification"])
     </pre>
   </div>
-  <div class="note">Cross-database references are plain IDs only (no foreign keys across services). Consistency is maintained by Kafka events and idempotent consumers.</div>
+  <div class="note">Tables are still grouped by bounded context. Cross-context references are plain IDs. Consistency between services is maintained by Kafka events and idempotent consumers (<code>processed_event</code>).</div>
 </section>
 
 <section id="lifecycle">
@@ -130,19 +138,19 @@ stateDiagram-v2
   <h2>Kafka topics (drive table writes)</h2>
   <table>
     <tr><th>Topic</th><th>Producer writes</th><th>Consumer updates</th></tr>
-    <tr><td><code>oms.orders.created</code></td><td><code>order_pg.outbox_event</code></td><td><code>delivery_pg.order_lifecycle</code>, <code>alloc_pg.order_line_allocation_state</code></td></tr>
-    <tr><td><code>oms.orders.fully-allocated</code></td><td><code>alloc_pg.outbox_event</code></td><td><code>delivery_pg</code> status → Allocated + transition row</td></tr>
-    <tr><td><code>oms.bulk.received</code></td><td><code>alloc_pg.outbox_event</code></td><td>future analytics</td></tr>
-    <tr><td><code>oms.orders.delivered</code></td><td><code>delivery_pg.outbox_event</code></td><td>audit / notify path</td></tr>
-    <tr><td><code>oms.notifications.requested</code></td><td><code>delivery_pg.outbox_event</code></td><td><code>notif_pg.notification_record</code></td></tr>
-    <tr><td><code>oms.images.uploaded</code></td><td>intake outbox</td><td>image-analysis → match suggested</td></tr>
-    <tr><td><code>oms.images.match-suggested</code></td><td>image-analysis outbox</td><td>UI / intake confirmation</td></tr>
+    <tr><td><code>oms.orders.created</code></td><td>order-service (after commit)</td><td><code>order_lifecycle</code>, <code>order_line_allocation_state</code></td></tr>
+    <tr><td><code>oms.orders.fully-allocated</code></td><td>allocation-service</td><td>status → Allocated + transition row</td></tr>
+    <tr><td><code>oms.bulk.received</code></td><td>allocation-service</td><td>future analytics</td></tr>
+    <tr><td><code>oms.orders.delivered</code></td><td>delivery-service</td><td>audit / notify path</td></tr>
+    <tr><td><code>oms.notifications.requested</code></td><td>delivery-service</td><td><code>notification_record</code></td></tr>
+    <tr><td><code>oms.images.uploaded</code></td><td>intake-service</td><td>image-analysis → match suggested</td></tr>
+    <tr><td><code>oms.images.match-suggested</code></td><td>image-analysis-service</td><td>UI / intake confirmation</td></tr>
   </table>
 </section>
 
-<!-- ===================== order_pg ===================== -->
+<!-- ===================== order tables ===================== -->
 <section id="order-pg">
-  <h2>Database: <code>order_pg</code> <span class="db-badge">order-service</span></h2>
+  <h2>Tables: order context <span class="db-badge">order-service · shared oms</span></h2>
   <p class="muted">Authoritative store for customers, catalog items, and customer orders.</p>
 
   <h3 id="tbl-customer"><code>customer</code></h3>
@@ -173,7 +181,7 @@ stateDiagram-v2
     <tr><td><code>deliveredToCustomerAt</code></td><td>Instant</td><td>optional</td><td>When marked delivered</td></tr>
     <tr><td><code>adminToCustomerDurationSeconds</code></td><td>Long</td><td>optional, ≥ 0</td><td>Whole-second delivery duration</td></tr>
   </table>
-  <div class="flow"><b>How it is processed:</b> Created atomically in one JPA transaction with lines + an <code>OrderCreated</code> outbox row. Status can be updated via admin BFF. Delivery timestamps may be mirrored here for read models; authoritative lifecycle transitions live in <code>delivery_pg</code>.</div>
+  <div class="flow"><b>How it is processed:</b> Created atomically in one JPA transaction with lines; after commit, <code>OrderCreated</code> is published to Kafka. Status can be updated via admin BFF. Delivery timestamps may be mirrored here for read models; authoritative lifecycle transitions live in delivery tables.</div>
 
   <h3 id="tbl-customer-order-line"><code>customer_order_line</code></h3>
   <table>
@@ -187,9 +195,9 @@ stateDiagram-v2
   <div class="flow"><b>How it is processed:</b> Written only on successful intake → <code>createOrder</code>. Allocation service tracks its own totals; full allocation is detected there and published as <code>OrderFullyAllocated</code>. Line count at intake is 1..100.</div>
 </section>
 
-<!-- ===================== alloc_pg ===================== -->
+<!-- ===================== allocation tables ===================== -->
 <section id="alloc-pg">
-  <h2>Database: <code>alloc_pg</code> <span class="db-badge">allocation-service</span></h2>
+  <h2>Tables: allocation context <span class="db-badge">allocation-service · shared oms</span></h2>
   <p class="muted">Bulk purchases from external platforms, receiving stock, and allocating units to customer order lines.</p>
 
   <h3 id="tbl-bulk"><code>bulk_purchase</code></h3>
@@ -225,7 +233,7 @@ stateDiagram-v2
     <tr><td><code>orderId</code></td><td>String</td><td>required</td><td>Parent order (denormalized)</td></tr>
     <tr><td><code>quantity</code></td><td>int</td><td>≥ 1</td><td>Units allocated in this move</td></tr>
   </table>
-  <div class="flow"><b>How it is processed:</b> <code>allocate</code> enforces three guards — qty ≥ 1, qty ≤ remaining received on bulk line, qty ≤ remaining requested on order line. On reject, nothing changes. On success, a row is inserted and order-line totals are updated. When every line of an order is fully allocated, <code>OrderFullyAllocated</code> is written to the outbox.</div>
+  <div class="flow"><b>How it is processed:</b> <code>allocate</code> enforces three guards — qty ≥ 1, qty ≤ remaining received on bulk line, qty ≤ remaining requested on order line. On reject, nothing changes. On success, a row is inserted and order-line totals are updated. When every line of an order is fully allocated, <code>OrderFullyAllocated</code> is published to Kafka after commit.</div>
 
   <h3 id="tbl-order-line-state"><code>order_line_allocation_state</code></h3>
   <table>
@@ -239,9 +247,9 @@ stateDiagram-v2
   <div class="flow"><b>How it is processed:</b> Seeded when allocation-service consumes <code>OrderCreated</code> (idempotent). Updated on each successful <code>allocate</code>. Used to detect full allocation for the order.</div>
 </section>
 
-<!-- ===================== delivery_pg ===================== -->
+<!-- ===================== delivery tables ===================== -->
 <section id="delivery-pg">
-  <h2>Database: <code>delivery_pg</code> <span class="db-badge">delivery-service</span></h2>
+  <h2>Tables: delivery context <span class="db-badge">delivery-service · shared oms</span></h2>
   <p class="muted">Authoritative order lifecycle, transition history, and delivery timing.</p>
 
   <h3 id="tbl-lifecycle"><code>order_lifecycle</code></h3>
@@ -254,7 +262,7 @@ stateDiagram-v2
     <tr><td><code>deliveredToCustomerAt</code></td><td>Instant</td><td>optional, single-shot</td><td>Delivery timestamp</td></tr>
     <tr><td><code>adminToCustomerDurationSeconds</code></td><td>Long</td><td>optional, ≥ 0 whole seconds</td><td>Computed duration</td></tr>
   </table>
-  <div class="flow"><b>How it is processed:</b> Created on <code>OrderCreated</code> with status <code>Created</code>. Moved to <code>Allocated</code> on <code>OrderFullyAllocated</code>. <code>markOrderDelivered</code> only allowed from <code>Allocated</code>; rejects missing placement date, delivered-before-placement, and re-marking. On success writes outbox events for delivered + notification requested.</div>
+  <div class="flow"><b>How it is processed:</b> Created on <code>OrderCreated</code> with status <code>Created</code>. Moved to <code>Allocated</code> on <code>OrderFullyAllocated</code>. <code>markOrderDelivered</code> only allowed from <code>Allocated</code>; rejects missing placement date, delivered-before-placement, and re-marking. On success publishes delivered + <code>NotificationRequested</code> to Kafka after commit.</div>
 
   <h3 id="tbl-transition"><code>status_transition_record</code></h3>
   <table>
@@ -268,9 +276,9 @@ stateDiagram-v2
   <div class="flow"><b>How it is processed:</b> Append-only. A new row is inserted on every successful status change. Never updated or deleted. Powers audit / history APIs.</div>
 </section>
 
-<!-- ===================== notif_pg ===================== -->
+<!-- ===================== notification tables ===================== -->
 <section id="notif-pg">
-  <h2>Database: <code>notif_pg</code> <span class="db-badge">notification-service</span></h2>
+  <h2>Tables: notification context <span class="db-badge">notification-service · shared oms</span></h2>
 
   <h3 id="tbl-notif"><code>notification_record</code></h3>
   <table>
@@ -286,20 +294,8 @@ stateDiagram-v2
 
 <!-- ===================== shared ===================== -->
 <section id="shared">
-  <h2>Shared tables (per producing / consuming service)</h2>
-  <p class="muted">Present in services that publish or consume Kafka events (order, intake, allocation, delivery, notification, image-analysis).</p>
-
-  <h3 id="tbl-outbox"><code>outbox_event</code></h3>
-  <table>
-    <tr><th>Field</th><th>Type</th><th>Constraints</th><th>Meaning</th></tr>
-    <tr><td><code>eventId</code></td><td>String (PK)</td><td>UUID</td><td>Outbox row id</td></tr>
-    <tr><td><code>aggregateId</code></td><td>String</td><td>required</td><td>Kafka partition key (orderId, bulkId, imageId)</td></tr>
-    <tr><td><code>topic</code></td><td>String</td><td>required</td><td>Target Kafka topic</td></tr>
-    <tr><td><code>payload</code></td><td>LOB / text</td><td>required JSON</td><td>Serialized event body</td></tr>
-    <tr><td><code>occurredAt</code></td><td>Instant</td><td>required</td><td>When domain change happened</td></tr>
-    <tr><td><code>published</code></td><td>boolean</td><td>default false</td><td>True after relay publishes to Kafka</td></tr>
-  </table>
-  <div class="flow"><b>How it is processed:</b> Written in the <em>same</em> DB transaction as the domain change. A scheduled relay reads unpublished rows, publishes to Kafka keyed by <code>aggregateId</code>, then marks <code>published = true</code>. Guarantees a committed write and its event stay consistent.</div>
+  <h2>Shared: idempotency</h2>
+  <p class="muted">Consumers that handle Kafka events use <code>processed_event</code> for dedupe. Producers publish directly after commit via <code>DomainEventPublisher</code>.</p>
 
   <h3 id="tbl-processed"><code>processed_event</code></h3>
   <table>
@@ -311,13 +307,13 @@ stateDiagram-v2
 </section>
 
 <section id="stateless">
-  <h2>Stateless / no domain DB</h2>
+  <h2>Other services</h2>
   <table>
     <tr><th>Service</th><th>Data store</th><th>Role</th></tr>
     <tr><td><code>api-gateway</code></td><td>none</td><td>Routing, optional API-key auth, edge entry</td></tr>
-    <tr><td><code>admin-bff-service</code></td><td>none (short-TTL in-memory cache)</td><td>Aggregates reads/commands to order, allocation, delivery</td></tr>
-    <tr><td><code>intake-service</code></td><td>outbox + object storage</td><td>Validates submissions, stores images, calls order-service</td></tr>
-    <tr><td><code>image-analysis-service</code></td><td>outbox (+ optional image_pg)</td><td>Consumes uploads, runs VisionProvider, emits candidates</td></tr>
+    <tr><td><code>admin-bff-service</code></td><td>shared <code>oms</code> (catalog) + short-TTL cache</td><td>Aggregates reads/commands; weekly catalog scrape</td></tr>
+    <tr><td><code>intake-service</code></td><td>shared <code>oms</code> + object storage</td><td>Validates submissions, stores images, calls order-service</td></tr>
+    <tr><td><code>image-analysis-service</code></td><td>shared <code>oms</code> + object storage</td><td>Consumes uploads, runs VisionProvider, emits candidates</td></tr>
   </table>
 </section>
 
@@ -326,10 +322,10 @@ stateDiagram-v2
 
   <h3>1. Customer order intake</h3>
   <ol class="muted">
-    <li>Client uploads image (optional) → intake validates JPEG/PNG ≤ 10 MB → object storage + <code>ImageUploaded</code> outbox.</li>
+    <li>Client uploads image (optional) → intake validates JPEG/PNG ≤ 10 MB → object storage + after-commit <code>ImageUploaded</code>.</li>
     <li>image-analysis consumes event → VisionProvider → <code>ImageMatchSuggested</code>; user confirms <code>itemRef</code>.</li>
     <li>Client <code>POST /api/orders</code> → intake validates lines (1..100, qty, search/image) → calls order-service.</li>
-    <li>order-service validates customer + items → writes <code>customer_order</code>, <code>customer_order_line</code>, outbox <code>OrderCreated</code>.</li>
+    <li>order-service validates customer + items → writes <code>customer_order</code>, <code>customer_order_line</code>, then publishes <code>OrderCreated</code>.</li>
     <li>delivery-service inserts <code>order_lifecycle</code> (Created) + first <code>status_transition_record</code>.</li>
     <li>allocation-service seeds <code>order_line_allocation_state</code> rows for ceilings.</li>
   </ol>
@@ -337,14 +333,14 @@ stateDiagram-v2
   <h3>2. Bulk purchase → allocate</h3>
   <ol class="muted">
     <li>Admin records bulk → <code>bulk_purchase</code> + <code>bulk_purchase_line</code> atomically.</li>
-    <li>Admin marks received → updates <code>receivedQty</code> + outbox <code>BulkPurchaseReceived</code>.</li>
+    <li>Admin marks received → updates <code>receivedQty</code> + publishes <code>BulkPurchaseReceived</code>.</li>
     <li>Admin allocates → insert <code>allocation</code>, update <code>order_line_allocation_state</code>.</li>
-    <li>When all lines fully allocated → outbox <code>OrderFullyAllocated</code> → delivery status Allocated + transition row.</li>
+    <li>When all lines fully allocated → publish <code>OrderFullyAllocated</code> → delivery status Allocated + transition row.</li>
   </ol>
 
   <h3>3. Deliver → notify</h3>
   <ol class="muted">
-    <li>Admin marks order delivered (only if Allocated) → update <code>order_lifecycle</code>, append transition, outbox delivered + <code>NotificationRequested</code>.</li>
+    <li>Admin marks order delivered (only if Allocated) → update <code>order_lifecycle</code>, append transition, publish delivered + <code>NotificationRequested</code>.</li>
     <li>notification-service upserts <code>notification_record</code>, sends with ≤ 3 retries → SENT or FAILED.</li>
   </ol>
 

@@ -30,6 +30,11 @@ public class AdminBffController {
         return service.viewOrderList();
     }
 
+    @PostMapping("/orders")
+    public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
+        return toResponse(service.createOrder(body), HttpStatus.CREATED);
+    }
+
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<?> detail(@PathVariable String orderId) {
         return toResponse(service.viewOrderDetail(orderId), HttpStatus.OK);

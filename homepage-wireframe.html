@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Homepage wireframe — SA's best stores, one order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0e1116;
+    --ink-2: #4a5160;
+    --ink-3: #8a91a0;
+    --line: #e7e9ee;
+    --bg: #ffffff;
+    --bg-soft: #f5f6f8;
+    --bg-sunk: #eceef2;
+    --accent: #ff4d2e;
+    --accent-soft: #fff0ec;
+    --ok: #0f9d6b;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --max: 1240px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* Placeholder image block (wireframe) */
+  .ph {
+    position: relative; background-color: var(--bg-sunk);
+    background-image: repeating-linear-gradient(135deg, transparent 0 14px, rgba(14,17,22,.04) 14px 15px);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-3); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  }
+
+  /* Wireframe notes (toggle) */
+  .note {
+    display: none; position: absolute; z-index: 5;
+    background: #1f6feb; color: #fff; font-size: 11.5px; font-weight: 600;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  body.show-notes .note { display: inline-block; }
+  body.show-notes section, body.show-notes header.site, body.show-notes footer { outline: 1px dashed rgba(31,111,235,.35); outline-offset: -1px; }
+  .rel { position: relative; }
+
+  /* Announcement bar */
+  .promo {
+    background: var(--ink); color: #fff; font-size: 13px; text-align: center; padding: 9px 16px;
+  }
+  .promo b { color: #ffb4a6; }
+
+  /* Header */
+  header.site {
+    position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.9);
+    backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 28px; height: 70px; }
+  .logo { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-search {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 0 16px; height: 42px;
+  }
+  .nav-search input { flex: 1; border: 0; background: transparent; outline: none; font: inherit; }
+  .nav-actions { display: flex; gap: 10px; }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 999px; border: 1px solid var(--line); background: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+  }
+
+  /* Hero */
+  .hero { padding: 40px 0 28px; }
+  .hero-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: stretch; }
+  .hero-copy {
+    background: var(--bg-soft); border-radius: 28px; padding: 52px 48px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+    background: #fff; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .hero h1 {
+    font-size: clamp(36px, 4.6vw, 58px); line-height: 1.04; letter-spacing: -.035em;
+    margin: 18px 0 14px; font-weight: 800;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p.lead { color: var(--ink-2); font-size: 17px; max-width: 520px; margin: 0 0 26px; }
+  .order-box {
+    background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 8px;
+    display: flex; gap: 8px; align-items: center; max-width: 560px;
+  }
+  .order-box input { flex: 1; border: 0; outline: none; font: inherit; font-size: 15px; padding: 12px 12px; }
+  .btn {
+    border: 0; border-radius: 14px; padding: 13px 20px; font-weight: 700; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #242a33; }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--bg-soft); color: var(--ink); }
+  .btn-outline { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .hero-hints { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+  .hero-hints a { color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; }
+  .hero-trust { display: flex; gap: 28px; margin-top: 30px; }
+  .hero-trust div b { display: block; font-size: 22px; letter-spacing: -.02em; }
+  .hero-trust div span { font-size: 12.5px; color: var(--ink-3); }
+
+  .hero-visual { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px; }
+  .hero-visual .ph { border-radius: 22px; min-height: 180px; }
+  .hero-visual .tall { grid-row: span 2; }
+  .tag-float {
+    position: absolute; left: 14px; bottom: 14px; background: #fff; border-radius: 12px;
+    padding: 8px 12px; font-size: 12px; color: var(--ink); text-transform: none; letter-spacing: 0;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .tag-float b { font-size: 14px; }
+  .tag-float s { color: var(--ink-3); font-weight: 500; }
+
+  /* Store marquee */
+  .marquee { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; padding: 18px 0; }
+  .marquee-track { display: flex; gap: 56px; width: max-content; animation: scroll 38s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  .wordmark { font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #b3b8c3; white-space: nowrap; }
+  .wordmark:hover { color: var(--ink); }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+
+  /* Section headings */
+  section.block { padding: 64px 0 8px; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+  .sec-head h2 { font-size: 32px; letter-spacing: -.03em; margin: 0; line-height: 1.1; }
+  .sec-head p { margin: 6px 0 0; color: var(--ink-2); }
+  .link-more { font-weight: 700; font-size: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 2px; }
+
+  /* Sale */
+  .sale-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    background: var(--accent-soft); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px;
+  }
+  .sale-banner .lbl { font-weight: 800; color: var(--accent); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .countdown { display: flex; gap: 8px; }
+  .countdown div {
+    background: #fff; border-radius: 10px; min-width: 56px; text-align: center; padding: 6px 8px;
+  }
+  .countdown b { display: block; font-size: 20px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .countdown span { font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .chip {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 15px;
+    font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+  }
+  .chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  .deals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .deal { display: flex; flex-direction: column; gap: 10px; }
+  .deal .ph { aspect-ratio: 4 / 5; border-radius: var(--radius); }
+  .badge-off {
+    position: absolute; top: 12px; left: 12px; background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 8px; letter-spacing: 0;
+  }
+  .wish {
+    position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
+    background: #fff; border: 0; font-size: 15px; color: var(--ink-2);
+  }
+  .add {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; opacity: 0; transform: translateY(6px);
+    transition: .18s ease; justify-content: center;
+  }
+  .deal:hover .add { opacity: 1; transform: none; }
+  .deal .store { font-size: 12px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+  .deal .name { font-weight: 600; line-height: 1.35; }
+  .price { display: flex; align-items: baseline; gap: 8px; }
+  .price b { font-size: 17px; }
+  .price s { color: var(--ink-3); font-size: 13.5px; }
+  .stock { height: 4px; background: var(--bg-sunk); border-radius: 99px; overflow: hidden; }
+  .stock i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+  .stock-lbl { font-size: 12px; color: var(--ink-3); }
+
+  /* Category tiles */
+  .cats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .cat { background: var(--bg-soft); border-radius: var(--radius); padding: 14px; transition: .15s; }
+  .cat:hover { background: var(--bg-sunk); }
+  .cat .ph { aspect-ratio: 1; border-radius: 14px; margin-bottom: 12px; background-color: #fff; }
+  .cat b { display: block; font-size: 14.5px; }
+  .cat span { font-size: 12.5px; color: var(--ink-3); }
+
+  /* Store directory */
+  .tabs { display: flex; gap: 6px; background: var(--bg-soft); border-radius: 999px; padding: 5px; align-self: flex-start; }
+  .tab { border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: 13.5px; color: var(--ink-2); }
+  .tab.active { background: #fff; color: var(--ink); }
+  .stores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .store-card {
+    border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff;
+    display: flex; flex-direction: column; transition: border-color .15s;
+  }
+  .store-card:hover { border-color: var(--ink); }
+  .store-card .cover { height: 120px; border-radius: 0; }
+  .store-card .body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .store-card .top { display: flex; align-items: center; gap: 12px; }
+  .store-logo {
+    width: 46px; height: 46px; border-radius: 12px; background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; margin-top: -40px;
+    border: 3px solid #fff;
+  }
+  .store-card h3 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+  .store-card .meta { font-size: 12.5px; color: var(--ink-3); }
+  .store-card .foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; }
+  .pill-sale { background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+
+  /* Feature spotlight */
+  .spot { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .spot-card { border-radius: 24px; overflow: hidden; position: relative; min-height: 340px; display: flex; }
+  .spot-card .ph { position: absolute; inset: 0; }
+  .spot-copy {
+    position: relative; margin-top: auto; padding: 28px; background: linear-gradient(transparent, rgba(255,255,255,.96) 38%);
+    width: 100%;
+  }
+  .spot-copy small { font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
+  .spot-copy h3 { font-size: 26px; letter-spacing: -.02em; margin: 6px 0 8px; }
+  .spot-copy p { margin: 0 0 16px; color: var(--ink-2); max-width: 420px; }
+
+  /* How it works */
+  .how { background: var(--ink); color: #fff; border-radius: 28px; padding: 48px; margin-top: 64px; }
+  .how h2 { font-size: 32px; letter-spacing: -.03em; margin: 0 0 6px; }
+  .how > p { color: #a7adb9; margin: 0 0 32px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .step { background: #1a1f27; border-radius: var(--radius); padding: 22px; }
+  .step .n {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 14px;
+  }
+  .step b { display: block; font-size: 16px; margin-bottom: 6px; }
+  .step span { color: #a7adb9; font-size: 14px; }
+  .status-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+  .status { border: 1px solid #2b323d; border-radius: 999px; padding: 6px 13px; font-size: 13px; color: #cfd4dd; }
+
+  /* Track + newsletter */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  .panel { background: var(--bg-soft); border-radius: 24px; padding: 32px; }
+  .panel h3 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .panel p { color: var(--ink-2); margin: 0 0 18px; }
+  .inline-form { display: flex; gap: 8px; }
+  .inline-form input {
+    flex: 1; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font: inherit; background: #fff; outline: none;
+  }
+
+  footer { margin-top: 72px; border-top: 1px solid var(--line); padding: 44px 0 30px; }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 28px; }
+  .foot-grid h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin: 0 0 12px; }
+  .foot-grid a { display: block; font-size: 14px; color: var(--ink-2); padding: 3px 0; }
+  .foot-base { display: flex; justify-content: space-between; color: var(--ink-3); font-size: 12.5px; margin-top: 36px; gap: 16px; flex-wrap: wrap; }
+
+  /* Wireframe toolbar */
+  .wf-bar {
+    position: fixed; right: 18px; bottom: 18px; z-index: 50; display: flex; gap: 8px; align-items: center;
+    background: var(--ink); color: #fff; border-radius: 999px; padding: 6px 6px 6px 16px; font-size: 13px;
+  }
+  .wf-bar button { border: 0; border-radius: 999px; padding: 8px 14px; background: #2a313c; color: #fff; font-weight: 600; font-size: 12.5px; }
+  .wf-bar button.on { background: #1f6feb; }
+
+  @media (max-width: 1080px) {
+    .nav-links { display: none; }
+    .hero-grid, .spot, .duo { grid-template-columns: 1fr; }
+    .deals, .stores { grid-template-columns: repeat(2, 1fr); }
+    .cats { grid-template-columns: repeat(3, 1fr); }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+    .foot-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 620px) {
+    .hero-copy { padding: 32px 22px; }
+    .hero-visual { display: none; }
+    .nav-search { display: none; }
+    .cats { grid-template-columns: repeat(2, 1fr); }
+    .sale-banner, .sec-head { flex-direction: column; align-items: flex-start; }
+    .how { padding: 28px 20px; }
+    .steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="promo">Free delivery on orders over <b>R750</b> · One checkout for every store below</div>
+
+<!-- HEADER -->
+<header class="site rel">
+  <span class="note" style="left:24px;top:-12px">Sticky header · existing routes: /orders/new, /admin</span>
+  <div class="wrap nav">
+    <a href="#" class="logo">Order<span>MS</span></a>
+    <nav class="nav-links">
+      <a href="#sale">Sale</a>
+      <a href="#stores">Stores</a>
+      <a href="#categories">Categories</a>
+      <a href="#how">How it works</a>
+    </nav>
+    <label class="nav-search">
+      <span style="color:var(--ink-3)">⌕</span>
+      <input placeholder="Search Takealot, Zara, Le Creuset…" />
+    </label>
+    <div class="nav-actions">
+      <a class="icon-btn" href="#track" title="Track order">⟳</a>
+      <a class="icon-btn" href="#" title="Account">AC</a>
+      <a class="btn btn-primary" href="#">Order now</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy rel">
+      <span class="note" style="right:20px;top:16px">→ intake-service POST /api/orders · /api/images</span>
+      <span class="eyebrow"><span class="dot"></span>Shopping 30+ South African stores</span>
+      <h1>SA's best stores.<br/><em>One order.</em></h1>
+      <p class="lead">Tell us what you want from Takealot, Zara, Steve Madden, Jet and more. We buy it, bundle it and deliver it to your door.</p>
+      <div class="order-box">
+        <input placeholder="Paste a product name or link…" />
+        <button class="btn btn-ghost" title="Upload a photo">Photo</button>
+        <button class="btn btn-accent">Find it</button>
+      </div>
+      <div class="hero-hints">
+        Try:
+        <a href="#">Air fryer</a>
+        <a href="#">Steve Madden sneakers</a>
+        <a href="#">Zara linen shirt</a>
+        <a href="#">Cast-iron pot</a>
+      </div>
+      <div class="hero-trust">
+        <div><b>30+</b><span>stores in one cart</span></div>
+        <div><b>4.8★</b><span>customer rating</span></div>
+        <div><b>3–5 days</b><span>delivery nationwide</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="ph tall rel">Fashion campaign image
+        <div class="tag-float"><span>Zara</span><b>R499</b><s>R899</s></div>
+      </div>
+      <div class="ph rel">Sneaker image
+        <div class="tag-float"><span>Steve Madden</span><b>R1,199</b></div>
+      </div>
+      <div class="ph rel">Fragrance image
+        <div class="tag-float"><span>Red Square</span><b>−30%</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STORE MARQUEE -->
+<div class="marquee rel">
+  <span class="note" style="left:24px;top:-12px">Featured stores (text wordmarks — swap for licensed logos)</span>
+  <div class="marquee-track" id="marquee"></div>
+</div>
+
+<!-- SALE -->
+<section class="block" id="sale">
+  <div class="wrap rel">
+    <span class="note" style="right:0;top:-28px">Deals feed · filter by category · "Add to order" pre-fills the order form</span>
+    <div class="sec-head">
+      <div>
+        <h2>On sale right now</h2>
+        <p>Hand-picked markdowns from the stores you love.</p>
+      </div>
+      <a class="link-more" href="#">View all deals</a>
+    </div>
+
+    <div class="sale-banner">
+      <div>
+        <div class="lbl">Weekend flash sale</div>
+        <div style="color:var(--ink-2);font-size:14px">Up to 60% off · ends at midnight</div>
+      </div>
+      <div class="countdown" id="countdown">
+        <div><b id="cd-h">00</b><span>hrs</span></div>
+        <div><b id="cd-m">00</b><span>min</span></div>
+        <div><b id="cd-s">00</b><span>sec</span></div>
+      </div>
+    </div>
+
+    <div class="chips" id="deal-filters"></div>
+    <div class="deals" id="deals"></div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section class="block" id="categories">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Shop by category</h2>
+        <p>Everything from wardrobe staples to kitchen upgrades.</p>
+      </div>
+    </div>
+    <div class="cats">
+      <a class="cat" href="#"><div class="ph">img</div><b>Women's fashion</b><span>Zara · Woolworths · Foschini</span></a>
+      <a class="cat" href="#"><div class="ph">img</div><b>Men's fashion</b><span>Jet · Mr Price · Truworths</span></a>
+      <a class="cat" href="#"><div class="ph">img</div><b>Shoes & sneakers</b><span>Steve Madden · Sportscene</span></a>
+      <a class="cat" href="#"><div class="ph">img</div><b>Kitchen & cooking</b><span>Yuppiechef · Le Creuset</span></a>
+      <a class="cat" href="#"><div class="ph">img</div><b>Fragrance</b><span>Red Square · Dis-Chem</span></a>
+      <a class="cat" href="#"><div class="ph">img</div><b>Tech & home</b><span>Takealot · Makro</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- STORE DIRECTORY -->
+<section class="block" id="stores">
+  <div class="wrap rel">
+    <span class="note" style="right:0;top:-28px">Store directory · tabs filter client-side</span>
+    <div class="sec-head">
+      <div>
+        <h2>Top stores in South Africa</h2>
+        <p>Shop them all with one cart and one delivery.</p>
+      </div>
+      <div class="tabs" id="store-tabs"></div>
+    </div>
+    <div class="stores" id="stores-grid"></div>
+  </div>
+</section>
+
+<!-- SPOTLIGHT -->
+<section class="block">
+  <div class="wrap spot">
+    <div class="spot-card">
+      <div class="ph">Lifestyle image · cookware</div>
+      <div class="spot-copy">
+        <small>Kitchen edit</small>
+        <h3>Cook like a pro for less</h3>
+        <p>Le Creuset, Yuppiechef and @home essentials with up to 40% off this week.</p>
+        <a class="btn btn-primary" href="#">Shop kitchen</a>
+      </div>
+    </div>
+    <div class="spot-card rel">
+      <span class="note" style="left:16px;top:16px">→ image-analysis-service (photo match)</span>
+      <div class="ph">Lifestyle image · phone camera</div>
+      <div class="spot-copy">
+        <small>Snap to shop</small>
+        <h3>Saw it somewhere? Send us a photo.</h3>
+        <p>Upload a picture and we'll match it to products from our partner stores.</p>
+        <a class="btn btn-accent" href="#">Upload a photo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="how rel">
+      <span class="note" style="right:20px;top:20px">Maps to order lifecycle in delivery-service</span>
+      <h2>How it works</h2>
+      <p>One order, many stores. We handle the buying and delivery.</p>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><b>Tell us what you want</b><span>Search, paste a link or upload a photo.</span></div>
+        <div class="step"><div class="n">2</div><b>We buy it for you</b><span>We purchase from each store, often in bulk for better prices.</span></div>
+        <div class="step"><div class="n">3</div><b>We bundle your items</b><span>Everything is checked and packed into one delivery.</span></div>
+        <div class="step"><div class="n">4</div><b>Delivered to your door</b><span>You're notified the moment it arrives.</span></div>
+      </div>
+      <div class="status-row">
+        <span class="status">Created</span>
+        <span class="status">→ Allocated</span>
+        <span class="status">→ Delivered to customer</span>
+      </div>
+    </div>
+
+    <div class="duo" id="track">
+      <div class="panel">
+        <h3>Track your order</h3>
+        <p>Enter your order number to see where it is.</p>
+        <div class="inline-form">
+          <input placeholder="e.g. ORD-1001" />
+          <button class="btn btn-primary">Track</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Never miss a sale</h3>
+        <p>Weekly deals from Zara, Takealot, Jet and more.</p>
+        <div class="inline-form">
+          <input placeholder="Email address" />
+          <button class="btn btn-accent">Subscribe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="rel">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="logo">Order<span>MS</span></div>
+        <p style="color:var(--ink-2);max-width:280px;font-size:14px">South Africa's favourite stores, one checkout, one delivery.</p>
+      </div>
+      <div><h4>Shop</h4><a href="#">Sale</a><a href="#">Fashion</a><a href="#">Kitchen</a><a href="#">Fragrance</a></div>
+      <div><h4>Stores</h4><a href="#">Takealot</a><a href="#">Zara</a><a href="#">Steve Madden</a><a href="#">Jet</a></div>
+      <div><h4>Help</h4><a href="#">Track order</a><a href="#">Delivery</a><a href="#">Returns</a><a href="#">Contact</a></div>
+      <div><h4>Company</h4><a href="#">About</a><a href="#">Careers</a><a href="#">Admin login</a></div>
+    </div>
+    <div class="foot-base">
+      <span>© 2026 OrderMS · Johannesburg, South Africa</span>
+      <span>Wireframe — prices and deals are sample data. Store names are trademarks of their owners.</span>
+    </div>
+  </div>
+</footer>
+
+<div class="wf-bar">
+  Wireframe
+  <button id="toggle-notes">Show notes</button>
+</div>
+
+<script>
+const STORES = [
+  { name: "Takealot",     cat: "Marketplace", meta: "Electronics, home, everything", sale: "Up to 50% off" },
+  { name: "Zara",         cat: "Fashion",     meta: "Women · Men · Kids",            sale: "Mid-season sale" },
+  { name: "Steve Madden", cat: "Shoes",       meta: "Sneakers, heels, boots",        sale: "Up to 40% off" },
+  { name: "Jet",          cat: "Fashion",     meta: "Family fashion & home",         sale: "2 for R199" },
+  { name: "Woolworths",   cat: "Fashion",     meta: "Fashion, beauty, home",         sale: "Up to 30% off" },
+  { name: "Mr Price",     cat: "Fashion",     meta: "Fashion at value prices",       sale: "Clearance" },
+  { name: "Superbalist",  cat: "Fashion",     meta: "Online fashion & brands",       sale: "Up to 60% off" },
+  { name: "Foschini",     cat: "Fashion",     meta: "Women's fashion & beauty",      sale: "Selected 25% off" },
+  { name: "Truworths",    cat: "Fashion",     meta: "Premium everyday fashion",      sale: "" },
+  { name: "Sportscene",   cat: "Shoes",       meta: "Sneakers & streetwear",         sale: "Up to 35% off" },
+  { name: "Yuppiechef",   cat: "Kitchen",     meta: "Cookware & kitchen tools",      sale: "Kitchen week" },
+  { name: "Le Creuset",   cat: "Kitchen",     meta: "Cast-iron cookware",            sale: "Selected 20% off" },
+  { name: "@home",        cat: "Kitchen",     meta: "Homeware & kitchen",            sale: "Up to 40% off" },
+  { name: "Red Square",   cat: "Fragrance",   meta: "Designer fragrance & beauty",   sale: "Fragrance event" },
+  { name: "Dis-Chem",     cat: "Fragrance",   meta: "Perfume, beauty & health",      sale: "Up to 30% off" },
+  { name: "Makro",        cat: "Marketplace", meta: "Bulk, tech & appliances",       sale: "" },
+];
+
+const DEALS = [
+  { store: "Zara",         cat: "Fashion",   name: "Linen blend oversized shirt",       was: 899,  now: 499,  left: 32 },
+  { store: "Steve Madden", cat: "Shoes",     name: "Possession platform sneaker",       was: 1899, now: 1199, left: 18 },
+  { store: "Takealot",     cat: "Tech",      name: "5.5L digital air fryer",            was: 1999, now: 1149, left: 64 },
+  { store: "Red Square",   cat: "Fragrance", name: "Carolina Herrera Good Girl EDP 80ml",was: 2650, now: 1855, left: 22 },
+  { store: "Le Creuset",   cat: "Kitchen",   name: "Signature cast-iron casserole 24cm",was: 6999, now: 5599, left: 12 },
+  { store: "Jet",          cat: "Fashion",   name: "Relaxed fit denim jacket",          was: 399,  now: 249,  left: 70 },
+  { store: "Yuppiechef",   cat: "Kitchen",   name: "Stainless steel cookware set (5pc)",was: 2499, now: 1499, left: 41 },
+  { store: "Dis-Chem",     cat: "Fragrance", name: "Hugo Boss Bottled EDT 100ml",       was: 1950, now: 1365, left: 35 },
+  { store: "Superbalist",  cat: "Fashion",   name: "Ribbed knit midi dress",            was: 699,  now: 349,  left: 27 },
+  { store: "Sportscene",   cat: "Shoes",     name: "Retro court sneaker",               was: 1499, now: 999,  left: 48 },
+  { store: "@home",        cat: "Kitchen",   name: "Ceramic dinner set (16pc)",         was: 1299, now: 799,  left: 55 },
+  { store: "Takealot",     cat: "Tech",      name: "Wireless noise-cancelling earbuds", was: 1499, now: 899,  left: 15 },
+];
+
+const rand = n => "R" + n.toLocaleString("en-ZA").replace(/\s/g, ",");
+const initials = s => s.replace(/[^A-Za-z ]/g, "").split(" ").filter(Boolean).map(w => w[0]).join("").slice(0, 2).toUpperCase() || s.slice(0, 2);
+
+// Marquee (duplicated for seamless loop)
+const marquee = document.getElementById("marquee");
+const names = STORES.map(s => `<span class="wordmark">${s.name}</span>`).join("");
+marquee.innerHTML = names + names;
+
+// Deals
+let dealFilter = "All";
+const dealCats = ["All", "Fashion", "Shoes", "Kitchen", "Fragrance", "Tech"];
+function renderDeals() {
+  document.getElementById("deal-filters").innerHTML = dealCats.map(c =>
+    `<button class="chip${c === dealFilter ? " active" : ""}" data-c="${c}">${c}</button>`).join("");
+  document.querySelectorAll("#deal-filters .chip").forEach(b =>
+    b.onclick = () => { dealFilter = b.dataset.c; renderDeals(); });
+
+  const list = DEALS.filter(d => dealFilter === "All" || d.cat === dealFilter).slice(0, 8);
+  document.getElementById("deals").innerHTML = list.map(d => {
+    const off = Math.round((1 - d.now / d.was) * 100);
+    return `
+      <article class="deal">
+        <div class="ph rel">Product image
+          <span class="badge-off">−${off}%</span>
+          <button class="wish" title="Save">♡</button>
+          <button class="btn btn-primary add">Add to order</button>
+        </div>
+        <div class="store">${d.store}</div>
+        <div class="name">${d.name}</div>
+        <div class="price"><b>${rand(d.now)}</b><s>${rand(d.was)}</s></div>
+        <div class="stock"><i style="width:${100 - d.left}%"></i></div>
+        <div class="stock-lbl">${d.left}% left at this price</div>
+      </article>`;
+  }).join("");
+}
+renderDeals();
+
+// Store directory
+let storeTab = "All";
+const storeTabs = ["All", "Fashion", "Shoes", "Kitchen", "Fragrance", "Marketplace"];
+function renderStores() {
+  document.getElementById("store-tabs").innerHTML = storeTabs.map(t =>
+    `<button class="tab${t === storeTab ? " active" : ""}" data-t="${t}">${t}</button>`).join("");
+  document.querySelectorAll("#store-tabs .tab").forEach(b =>
+    b.onclick = () => { storeTab = b.dataset.t; renderStores(); });
+
+  const list = STORES.filter(s => storeTab === "All" || s.cat === storeTab).slice(0, 8);
+  document.getElementById("stores-grid").innerHTML = list.map(s => `
+    <a class="store-card" href="#">
+      <div class="ph cover">Store banner</div>
+      <div class="body">
+        <div class="top">
+          <div class="store-logo">${initials(s.name)}</div>
+        </div>
+        <h3>${s.name}</h3>
+        <div class="meta">${s.meta}</div>
+        <div class="foot">
+          ${s.sale ? `<span class="pill-sale">${s.sale}</span>` : `<span class="meta">New arrivals</span>`}
+          <span style="font-weight:700;font-size:13px">Shop →</span>
+        </div>
+      </div>
+    </a>`).join("");
+}
+renderStores();
+
+// Countdown to midnight
+function tick() {
+  const now = new Date();
+  const end = new Date(now); end.setHours(24, 0, 0, 0);
+  let s = Math.max(0, Math.floor((end - now) / 1000));
+  const pad = n => String(n).padStart(2, "0");
+  document.getElementById("cd-h").textContent = pad(Math.floor(s / 3600));
+  document.getElementById("cd-m").textContent = pad(Math.floor(s % 3600 / 60));
+  document.getElementById("cd-s").textContent = pad(s % 60);
+}
+tick(); setInterval(tick, 1000);
+
+// Wireframe notes toggle
+const toggle = document.getElementById("toggle-notes");
+toggle.onclick = () => {
+  const on = document.body.classList.toggle("show-notes");
+  toggle.classList.toggle("on", on);
+  toggle.textContent = on ? "Hide notes" : "Show notes";
+};
+</script>
+</body>
+</html>

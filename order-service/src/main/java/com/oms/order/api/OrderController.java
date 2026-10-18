@@ -30,7 +30,18 @@ public class OrderController {
 
     @PostMapping("/internal/orders")
     public ResponseEntity<?> createOrder(@RequestBody OrderDtos.CreateOrderRequest request) {
-        return toResponse(service.createOrder(request.customerId(), request.lines()), HttpStatus.CREATED);
+        return toResponse(
+                service.createOrder(
+                        request.customerId(),
+                        request.customerName(),
+                        request.email(),
+                        request.phone(),
+                        request.address(),
+                        request.source(),
+                        request.lines()
+                ),
+                HttpStatus.CREATED
+        );
     }
 
     @GetMapping("/orders")

@@ -66,6 +66,7 @@
 <nav>
   <div class="brand">Order <span>MS</span> &middot; Design</div>
   <h2>Contents</h2>
+  <a href="architecture-guide.html">Plain-English guide</a>
   <a href="#overview">Overview</a>
   <a href="#stack">Technology Stack</a>
   <a href="#goals">Design Goals</a>
@@ -98,12 +99,12 @@
     <tr><td>Backend services</td><td>Java 21, Spring Boot 3.x (Web, Data JPA, Kafka, Validation)</td></tr>
     <tr><td>Service topology</td><td>Microservices, one per bounded context + Image Analysis + API Gateway</td></tr>
     <tr><td>API Gateway</td><td>Spring Cloud Gateway (routing, auth, rate limiting, BFF aggregation)</td></tr>
-    <tr><td>Eventing / messaging</td><td>Apache Kafka with Schema Registry; Avro / JSON Schema contracts</td></tr>
-    <tr><td>Reliable publishing</td><td>Transactional outbox pattern (atomic DB write + outbox row, relay to Kafka)</td></tr>
+    <tr><td>Eventing / messaging</td><td>Apache Kafka (JSON events; Schema Registry optional later)</td></tr>
+    <tr><td>Event publishing</td><td>Direct Kafka publish after DB commit via DomainEventPublisher</td></tr>
     <tr><td>AI image analysis</td><td>Pluggable <code>VisionProvider</code> abstraction over a modern vision model</td></tr>
     <tr><td>Frontend (web)</td><td>Angular, mobile-first responsive (customer portal + admin console)</td></tr>
     <tr><td>Frontend (mobile)</td><td>Later milestone: Angular + Capacitor/Ionic (or native) reusing the gateway</td></tr>
-    <tr><td>Relational data</td><td>PostgreSQL, database-per-service</td></tr>
+    <tr><td>Relational data</td><td>One shared PostgreSQL (or shared H2 file locally) — all services</td></tr>
     <tr><td>Object storage</td><td>S3-compatible bucket for uploaded images</td></tr>
     <tr><td>Packaging & orchestration</td><td>Docker containers, Kubernetes, horizontal scaling</td></tr>
     <tr><td>Observability</td><td>Structured logs, Prometheus metrics, OpenTelemetry tracing</td></tr>
@@ -116,38 +117,44 @@
   <div class="goal"><div><b>Allocation safety</b> &mdash; allocations can never exceed received bulk quantity or requested customer quantity.</div></div>
   <div class="goal"><div><b>Deterministic lifecycle</b> &mdash; order status only advances through defined, guarded transitions with a durable, append-only history.</div></div>
   <div class="goal"><div><b>Auditable timing</b> &mdash; delivery durations are non-negative whole seconds from a single anchor date.</div></div>
-  <div class="goal"><div><b>Reliable eventing</b> &mdash; state changes are published via the transactional outbox so a committed write and its event are never out of sync.</div></div>
+  <div class="goal"><div><b>Eventing</b> &mdash; after a successful DB commit, services publish domain events directly to Kafka via <code>DomainEventPublisher</code>.</div></div>
   <div class="goal"><div><b>Horizontal scalability</b> &mdash; stateless services scale out via Kubernetes and consume Kafka in consumer groups with idempotent handlers.</div></div>
 </section>
 <section id="architecture">
   <h2>Architecture</h2>
-  <p class="muted">Angular web + future mobile clients talk REST/JSON to a single API Gateway, which routes to stateless microservices. Services communicate asynchronously over Kafka and each owns its own PostgreSQL database.</p>
+  <p class="muted">Angular web + future mobile clients talk REST/JSON to a single API Gateway, which routes to stateless microservices. Services share <strong>one</strong> database and publish domain events to Kafka <strong>after commit</strong>. Same diagram as <code>data-dictionary.html</code>.</p>
   <div class="diagram">
     <pre class="mermaid">
 flowchart TD
   WEB["Angular Web App<br/>(customer + admin, mobile-first)"]
   MOB["Mobile App<br/>(later milestone)"]
-  GW["API Gateway<br/>Spring Cloud Gateway"]
+  GW["api-gateway<br/>Spring Cloud Gateway"]
   WEB --> GW
   MOB --> GW
-  GW --> ORD["order-service"]
   GW --> INT["intake-service"]
+  GW --> ORD["order-service"]
   GW --> ADM["admin-bff-service"]
   GW --> ALL["allocation-service"]
   GW --> DEL["delivery-service"]
-  ORD --> ORDDB[("order_pg")]
-  INT --> INTDB[("intake_pg")]
-  ALL --> ALLDB[("alloc_pg")]
-  DEL --> DELDB[("delivery_pg")]
-  ORD -. events .-> K{{"Apache Kafka<br/>+ Schema Registry<br/>+ outbox"}}
-  INT -. events .-> K
-  ALL -. events .-> K
-  DEL -. events .-> K
-  K -. image-upload .-> IMG["image-analysis-service"]
-  K -. notify .-> NOT["notification-service"]
-  IMG --> IMGDB[("image_pg")]
-  IMG --> OBJ[("Object Storage S3")]
-  NOT --> NOTDB[("notif_pg")]
+  DB[("Shared DB · oms<br/>H2 file or Postgres")]
+  INT --> DB
+  ORD --> DB
+  ADM --> DB
+  ALL --> DB
+  DEL --> DB
+  IMG --> DB
+  NOT --> DB
+  INT --> OBJ[("Object storage S3")]
+  ORD -. after commit .-> K{{"Apache Kafka"}}
+  INT -. after commit .-> K
+  ALL -. after commit .-> K
+  DEL -. after commit .-> K
+  IMG -. after commit .-> K
+  K --> IMG["image-analysis-service"]
+  K --> NOT["notification-service"]
+  K --> ALL
+  K --> DEL
+  IMG --> OBJ
   NOT --> CUST(["Customer notification"])
     </pre>
   </div>
@@ -155,13 +162,13 @@ flowchart TD
   <h3>Services and Bounded Contexts</h3>
   <table>
     <tr><th>Service</th><th>Context</th><th>Owns</th><th>Responsibility</th></tr>
-    <tr><td><code>intake-service</code></td><td>Order intake</td><td>intake_pg</td><td>Validate website submissions atomically; coordinate image-upload handoff; forward valid orders.</td></tr>
-    <tr><td><code>order-service</code></td><td>Order & catalog</td><td>order_pg</td><td>Authoritative store of Customer, Order, OrderLine; enforce invariants; assign immutable order ids.</td></tr>
-    <tr><td><code>admin-bff-service</code></td><td>Administration / BFF</td><td>none</td><td>Admin operations and read aggregation for the console; delegates domain logic.</td></tr>
-    <tr><td><code>allocation-service</code></td><td>Allocation</td><td>alloc_pg</td><td>Record received bulk quantities; create allocations; enforce over-allocation guards; detect full allocation.</td></tr>
-    <tr><td><code>delivery-service</code></td><td>Delivery & lifecycle</td><td>delivery_pg</td><td>Transition order status; append-only history; mark deliveries; compute dual durations.</td></tr>
-    <tr><td><code>notification-service</code></td><td>Notification</td><td>notif_pg</td><td>Consume NotificationRequested; send with bounded retry and failure recording.</td></tr>
-    <tr><td><code>image-analysis-service</code></td><td>Visual matching</td><td>image_pg</td><td>Consume image-upload events; run the vision model; emit candidate matches with confidence.</td></tr>
+    <tr><td><code>intake-service</code></td><td>Order intake</td><td>shared <code>oms</code></td><td>Validate website submissions atomically; coordinate image-upload handoff; forward valid orders.</td></tr>
+    <tr><td><code>order-service</code></td><td>Order & catalog</td><td>shared <code>oms</code></td><td>Authoritative store of Customer, Order, OrderLine; enforce invariants; assign immutable order ids.</td></tr>
+    <tr><td><code>admin-bff-service</code></td><td>Administration / BFF</td><td>shared <code>oms</code> (catalog)</td><td>Admin operations, catalog scrape, read aggregation; delegates domain logic.</td></tr>
+    <tr><td><code>allocation-service</code></td><td>Allocation</td><td>shared <code>oms</code></td><td>Record received bulk quantities; create allocations; enforce over-allocation guards; detect full allocation.</td></tr>
+    <tr><td><code>delivery-service</code></td><td>Delivery & lifecycle</td><td>shared <code>oms</code></td><td>Transition order status; append-only history; mark deliveries; compute dual durations.</td></tr>
+    <tr><td><code>notification-service</code></td><td>Notification</td><td>shared <code>oms</code></td><td>Consume NotificationRequested; send with bounded retry and failure recording.</td></tr>
+    <tr><td><code>image-analysis-service</code></td><td>Visual matching</td><td>shared <code>oms</code></td><td>Consume image-upload events; run the vision model; emit candidate matches with confidence.</td></tr>
     <tr><td><code>api-gateway</code></td><td>Edge</td><td>none</td><td>Routing, auth, rate limiting, BFF aggregation; single public entry point.</td></tr>
   </table>
 
@@ -174,14 +181,14 @@ flowchart TD
 </section>
 <section id="events">
   <h2>Event-Driven Architecture & Kafka Topics</h2>
-  <p class="muted">Each producing service writes domain state and an outbox row in the same transaction; a relay publishes committed rows to Kafka, so a persisted change and its event stay consistent.</p>
+  <p class="muted">Producers save domain state, then publish the event to Kafka after the transaction commits via <code>DomainEventPublisher</code>. Consumers still dedupe via <code>processed_event</code>.</p>
   <table>
     <tr><th>Topic</th><th>Key</th><th>Producer</th><th>Consumers</th><th>Event</th></tr>
     <tr><td><code>oms.orders.created</code></td><td>orderId</td><td>order-service</td><td>delivery-service</td><td>OrderCreated</td></tr>
     <tr><td><code>oms.orders.fully-allocated</code></td><td>orderId</td><td>allocation-service</td><td>delivery-service</td><td>OrderFullyAllocated</td></tr>
     <tr><td><code>oms.bulk.received</code></td><td>bulkPurchaseId</td><td>allocation-service</td><td>analytics (future)</td><td>BulkPurchaseReceived</td></tr>
     <tr><td><code>oms.orders.delivered</code></td><td>orderId</td><td>delivery-service</td><td>notification-service</td><td>OrderDeliveredToCustomer</td></tr>
-    <tr><td><code>oms.notifications.requested</code></td><td>orderId</td><td>delivery-service (outbox)</td><td>notification-service</td><td>NotificationRequested</td></tr>
+    <tr><td><code>oms.notifications.requested</code></td><td>orderId</td><td>delivery-service</td><td>notification-service</td><td>NotificationRequested</td></tr>
     <tr><td><code>oms.images.uploaded</code></td><td>imageId</td><td>intake-service</td><td>image-analysis-service</td><td>ImageUploaded</td></tr>
     <tr><td><code>oms.images.match-suggested</code></td><td>imageId</td><td>image-analysis-service</td><td>intake / admin-bff</td><td>ImageMatchSuggested</td></tr>
   </table>
@@ -211,9 +218,9 @@ public record ItemCandidate(String itemRef, double confidence) {}  // confidence
 </section>
 <section id="data">
   <h2>Data Models</h2>
-  <p class="muted">Each service owns its data in its own PostgreSQL schema. Cross-service references are stored as plain id values (no cross-database foreign keys); consistency is maintained through events.</p>
+  <p class="muted">All services share one database (<code>oms</code>). Tables are still grouped by bounded context below. Cross-context references stay as plain ids; consistency between services still flows through Kafka events.</p>
 
-  <h3>order-service (order_pg)</h3>
+  <h3>order-service tables</h3>
   <pre>Customer           { customerId (unique), contact }
 CustomerOrder      { orderId (unique, immutable), customerId, orderStatus,
                      deliveredToCustomerAt?, adminToCustomerDurationSeconds? }
@@ -221,7 +228,7 @@ CustomerOrderLine  { orderLineId, orderId, itemRef, requestedQty 1..999,999,
                      fullyAllocated }
 Item               { itemRef, spec: SearchTerm(1..200) | Image(objectKey) }</pre>
 
-  <h3>allocation-service (alloc_pg)</h3>
+  <h3>allocation-service tables</h3>
   <pre>BulkPurchase       { bulkId, platformName 1..100, placementDate &le; today,
                      status, deliveredToAdminAt?, platformToAdminDurationSeconds? }
 BulkPurchaseLine   { bulkLineId, bulkId, itemRef, purchasedQty 1..1,000,000,
@@ -229,14 +236,13 @@ BulkPurchaseLine   { bulkLineId, bulkId, itemRef, purchasedQty 1..1,000,000,
 Allocation         { allocationId, bulkLineId (source), orderLineId (target),
                      quantity &ge; 1 }</pre>
 
-  <h3>delivery-service (delivery_pg)</h3>
+  <h3>delivery-service tables</h3>
   <pre>StatusTransitionRecord { id, orderId, priorStatus, newStatus, timestamp }
                          // append-only history</pre>
 
-  <h3>Shared: Transactional Outbox (per producing service)</h3>
-  <pre>OutboxEvent { eventId, aggregateId (partition key), topic, payload,
-              occurredAt, published }
-            // written in the SAME transaction as the domain change</pre>
+  <h3>Shared: domain event publish</h3>
+  <pre>DomainEventPublisher.publish(aggregateId, topic, event)
+            // sends to Kafka after the DB transaction commits</pre>
 
   <h3>Key Relationships</h3>
   <ul class="muted">
@@ -264,7 +270,7 @@ stateDiagram-v2
     <div class="card"><h4>Horizontal scaling</h4><p>Kubernetes Deployments with replicas; HPA reacts to CPU/latency and Kafka consumer lag.</p></div>
     <div class="card"><h4>Kafka parallelism</h4><p>Consumer groups; partition count sets max parallelism; aggregate-id keying preserves per-order ordering.</p></div>
     <div class="card"><h4>Idempotent consumers</h4><p>At-least-once delivery made safe via a processed-event dedup table.</p></div>
-    <div class="card"><h4>Database-per-service</h4><p>No shared-DB coupling; read-heavy paths can use short-TTL caches.</p></div>
+    <div class="card"><h4>Shared database</h4><p>One <code>oms</code> DB for all services (simpler for this stage); read-heavy paths can use short-TTL caches.</p></div>
     <div class="card"><h4>Object storage</h4><p>Images in an S3-compatible bucket, keeping large binaries out of PostgreSQL.</p></div>
     <div class="card"><h4>Containers & orchestration</h4><p>Docker images; Kubernetes with liveness/readiness probes and rolling updates.</p></div>
     <div class="card"><h4>Observability</h4><p>Structured logs, Prometheus metrics, OpenTelemetry tracing across gateway &rarr; service &rarr; Kafka.</p></div>
@@ -320,7 +326,7 @@ stateDiagram-v2
   <div class="grid">
     <div class="card"><h4>Property-based (jqwik)</h4><p>Intake validation, data-model invariants, allocation arithmetic/guards, lifecycle, duration computation, notification retry. Min 100 iterations each; boundary values generated deliberately.</p></div>
     <div class="card"><h4>Example (JUnit 5 + AssertJ)</h4><p>Empty order list returns empty without error; nonexistent order returns not-found; a new order reports status Created.</p></div>
-    <div class="card"><h4>Integration (Spring Boot + Testcontainers)</h4><p>Notification within the 60s window (mock sender + controllable clock); outbox publish-after-commit with idempotent redelivery; image upload &rarr; match round trip with a stub VisionProvider.</p></div>
+    <div class="card"><h4>Integration (Spring Boot + Testcontainers)</h4><p>Notification within the 60s window (mock sender + controllable clock); after-commit Kafka publish with idempotent redelivery; image upload &rarr; match round trip with a stub VisionProvider.</p></div>
   </div>
 </section>
 

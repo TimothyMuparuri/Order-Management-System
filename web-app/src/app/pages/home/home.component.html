@@ -1,0 +1,349 @@
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span>Shopping {{ stores().length }}+ South African stores</span>
+      <h1>SA's best stores.<br /><em>One order.</em></h1>
+      <p class="lead">
+        Tell us what you want from Takealot, Zara, Steve Madden, Jet and more. We buy it, bundle it and deliver it
+        to your door.
+      </p>
+      <form class="order-box" (submit)="$event.preventDefault(); find()">
+        <input [(ngModel)]="query" name="heroQuery" placeholder="Paste a product name or link…" aria-label="Product name or link" />
+        <button type="button" class="btn btn-ghost" (click)="uploadPhoto()" title="Upload a photo">Photo</button>
+        <button type="submit" class="btn btn-accent">Find it</button>
+      </form>
+      <div class="hero-hints">
+        Try:
+        @for (h of hints; track h) {
+          <button type="button" (click)="find(h)">{{ h }}</button>
+        }
+      </div>
+      <div class="hero-trust">
+        <div><b>{{ stores().length }}+</b><span>stores in one cart</span></div>
+        <div><b>1</b><span>checkout, one delivery</span></div>
+        <div><b>3–5 days</b><span>delivery nationwide</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      @if (heroDeals().fashion; as fashion) {
+        <button type="button" class="ph tall" (click)="addToOrder(fashion)"
+           [class.has-photo]="!!fashion.imageUrl"
+           [title]="'Order ' + fashion.name + ' with sapersonalshopper'">
+          @if (fashion.imageUrl) {
+            <img class="ph-photo" [src]="fashion.imageUrl" alt="" (error)="onDealImageError(fashion)" />
+          } @else {
+            Fashion
+          }
+          <span class="tag-float">
+            <span>{{ fashion.store }}</span>
+            <b>{{ rand(fashion.price) }}</b>
+            @if (fashion.was) { <s>{{ rand(fashion.was) }}</s> }
+          </span>
+        </button>
+      }
+      @if (heroDeals().shoes; as shoes) {
+        <button type="button" class="ph" (click)="addToOrder(shoes)"
+           [class.has-photo]="!!shoes.imageUrl"
+           [title]="'Order ' + shoes.name + ' with sapersonalshopper'">
+          @if (shoes.imageUrl) {
+            <img class="ph-photo" [src]="shoes.imageUrl" alt="" (error)="onDealImageError(shoes)" />
+          } @else {
+            Sneakers
+          }
+          <span class="tag-float">
+            <span>{{ shoes.store }}</span>
+            <b>{{ rand(shoes.price) }}</b>
+          </span>
+        </button>
+      }
+      @if (heroDeals().fragrance; as fragrance) {
+        <button type="button" class="ph" (click)="addToOrder(fragrance)"
+           [class.has-photo]="!!fragrance.imageUrl"
+           [title]="'Order ' + fragrance.name + ' with sapersonalshopper'">
+          @if (fragrance.imageUrl) {
+            <img class="ph-photo" [src]="fragrance.imageUrl" alt="" (error)="onDealImageError(fragrance)" />
+          } @else {
+            Fragrance
+          }
+          <span class="tag-float">
+            <span>{{ fragrance.store }}</span>
+            <b>{{ discount(fragrance) }}</b>
+          </span>
+        </button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- LIVE SEARCH RESULTS (stay on this site) -->
+@if (searchQuery()) {
+  <section class="block live-block" id="live-results">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Search results</h2>
+          <p>
+            Previews from partner stores — you stay on sapersonalshopper.
+            @if (liveNote()) { <span class="scrape-note">{{ liveNote() }}</span> }
+          </p>
+        </div>
+        <button type="button" class="link-more" (click)="clearSearch()">Clear search</button>
+      </div>
+
+      @if (liveLoading()) {
+        <p class="live-status">Looking across stores for “{{ searchQuery() }}”…</p>
+      }
+
+      <div class="deals live-deals">
+        @for (item of liveResults(); track item.id || item.url) {
+          <article class="deal">
+            <div class="ph deal-img" [class.has-photo]="!!item.imageUrl">
+              @if (item.imageUrl) {
+                <img class="ph-photo" [src]="item.imageUrl!" [alt]="item.name" (error)="$any($event.target).style.display='none'" />
+              }
+              <button type="button" class="deal-img-link" (click)="addLiveResult(item)" [title]="'Order ' + item.name">
+                @if (!item.imageUrl) { {{ item.category || item.store }} }
+              </button>
+              <span class="badge-off source-badge">{{ item.source === 'live' ? 'Live' : 'Catalog' }}</span>
+              <button type="button" class="btn btn-primary add" (click)="addLiveResult(item)">Add to order</button>
+            </div>
+            <div class="store">{{ item.store }}</div>
+            <button type="button" class="name linkish" (click)="addLiveResult(item)">{{ item.name }}</button>
+            <div class="price">
+              @if (item.price != null) {
+                <b>{{ rand(item.price) }}</b>
+                @if (item.was) { <s>{{ rand(item.was) }}</s> }
+              } @else {
+                <b class="price-tba">Price on request</b>
+              }
+            </div>
+            <button type="button" class="view linkish" (click)="addLiveResult(item)">Order with us →</button>
+          </article>
+        } @empty {
+          @if (!liveLoading()) {
+            <p class="empty-search">No live previews yet for “{{ searchQuery() }}”. Matching deals from our list are below.</p>
+          }
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<!-- STORE MARQUEE -->
+<div class="marquee" aria-label="Featured stores">
+  <div class="marquee-track">
+    @for (s of stores(); track s.name) {
+      <a class="wordmark" [href]="s.url" target="_blank" rel="noopener" [title]="'Visit ' + s.name">{{ s.name }}</a>
+    }
+    @for (s of stores(); track s.name) {
+      <a class="wordmark" [href]="s.url" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">{{ s.name }}</a>
+    }
+  </div>
+</div>
+
+<!-- SALE -->
+<section class="block" id="sale">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>On sale right now</h2>
+        <p>
+          Real markdowns from the stores you love. Prices checked {{ pricesChecked }}.
+          @if (scrapeNote()) { <span class="scrape-note">{{ scrapeNote() }}</span> }
+        </p>
+        @if (searchQuery()) {
+          <p class="search-active">
+            Results for <b>“{{ searchQuery() }}”</b>
+            · {{ visibleDeals().length }} found
+            <button type="button" class="link-more" (click)="clearSearch()">Clear</button>
+          </p>
+        }
+      </div>
+      <button type="button" class="link-more" (click)="dealFilter.set('All'); clearSearch()">View all deals</button>
+    </div>
+
+    <div class="sale-banner">
+      <div>
+        <div class="lbl">Today's deals</div>
+        <div class="sale-sub">Up to 60% off · refreshed at midnight</div>
+      </div>
+      <div class="countdown">
+        <div><b>{{ countdown().h }}</b><span>hrs</span></div>
+        <div><b>{{ countdown().m }}</b><span>min</span></div>
+        <div><b>{{ countdown().s }}</b><span>sec</span></div>
+      </div>
+    </div>
+
+    <div class="chips">
+      @for (c of dealFilters; track c) {
+        <button type="button" class="chip" [class.active]="dealFilter() === c" (click)="dealFilter.set(c)">{{ c }}</button>
+      }
+    </div>
+
+    <div class="deals">
+      @for (d of visibleDeals(); track d.id || (d.store + d.name)) {
+        <article class="deal">
+          <div class="ph deal-img" [class.has-photo]="!!d.imageUrl">
+            @if (d.imageUrl) {
+              <img class="ph-photo" [src]="d.imageUrl" [alt]="d.name" (error)="onDealImageError(d)" />
+            }
+            <button type="button" class="deal-img-link" (click)="addToOrder(d)"
+                    [title]="'Order ' + d.name + ' with sapersonalshopper'">
+              @if (!d.imageUrl) { {{ d.category }} }
+            </button>
+            @if (discount(d)) { <span class="badge-off">{{ discount(d) }}</span> }
+            <button type="button" class="wish" [class.on]="isSaved(d)" (click)="toggleSaved(d); $event.stopPropagation()" [title]="isSaved(d) ? 'Saved' : 'Save'">
+              {{ isSaved(d) ? '♥' : '♡' }}
+            </button>
+            <button type="button" class="btn btn-primary add" (click)="addToOrder(d)">Add to order</button>
+          </div>
+          <div class="store">{{ d.store }}</div>
+          <button type="button" class="name linkish" (click)="addToOrder(d)">{{ d.name }}</button>
+          <div class="price">
+            <b>{{ rand(d.price) }}</b>
+            @if (d.was) { <s>{{ rand(d.was) }}</s> }
+          </div>
+          <button type="button" class="view linkish" (click)="addToOrder(d)">Order with us →</button>
+        </article>
+      } @empty {
+        <p class="empty-search">No products match “{{ searchQuery() }}”. Try another store or product name.</p>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section class="block" id="categories">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Shop by category</h2>
+        <p>Everything from wardrobe staples to kitchen upgrades.</p>
+      </div>
+    </div>
+    <div class="cats">
+      @for (c of categories; track c.title) {
+        <button type="button" class="cat" (click)="showCategory(c.tab)">
+          <div class="ph">{{ c.tab }}</div>
+          <b>{{ c.title }}</b>
+          <span>{{ c.stores }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- STORE DIRECTORY TEASER -->
+<section class="block" id="stores">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Top stores in South Africa</h2>
+        <p>Shop them all with one cart and one delivery.</p>
+      </div>
+      <a class="link-more" routerLink="/stores">View all {{ stores().length }} stores →</a>
+    </div>
+    <div class="tabs">
+      @for (t of storeTabs; track t) {
+        <button type="button" class="tab" [class.active]="storeTab() === t" (click)="storeTab.set(t)">{{ t }}</button>
+      }
+    </div>
+    <div class="stores">
+      @for (s of visibleStores(); track s.id || s.name) {
+        <a class="store-card" routerLink="/stores" [queryParams]="{ q: s.name }">
+          <div class="ph cover" [class.has-photo]="!!s.imageUrl"
+               [style.background-image]="s.imageUrl ? 'url(' + s.imageUrl + ')' : null">
+            @if (!s.imageUrl) { {{ s.category }} }
+          </div>
+          <div class="body">
+            <div class="store-logo">{{ initials(s) }}</div>
+            <h3>{{ s.name }}</h3>
+            <div class="meta">{{ s.meta }}</div>
+            <div class="foot">
+              @if (s.sale) {
+                <span class="pill-sale">{{ s.sale }}</span>
+              } @else {
+                <span class="meta">New arrivals</span>
+              }
+              <span class="shop">Browse →</span>
+            </div>
+          </div>
+        </a>
+      }
+    </div>
+    <div class="stores-cta">
+      <a class="btn btn-primary" routerLink="/stores">See full store directory</a>
+    </div>
+  </div>
+</section>
+
+<!-- SPOTLIGHT -->
+<section class="block">
+  <div class="wrap spot">
+    <div class="spot-card">
+      <div class="ph">Kitchen</div>
+      <div class="spot-copy">
+        <small>Kitchen edit</small>
+        <h3>Cook like a pro for less</h3>
+        <p>Le Creuset, WMF and Stanley from Yuppiechef with up to 25% off.</p>
+        <button type="button" class="btn btn-primary" (click)="showDeals('Kitchen')">Shop kitchen deals</button>
+      </div>
+    </div>
+    <div class="spot-card">
+      <div class="ph">Snap to shop</div>
+      <div class="spot-copy">
+        <small>Snap to shop</small>
+        <h3>Saw it somewhere? Send us a photo.</h3>
+        <p>Upload a picture and we'll match it to products from our partner stores.</p>
+        <button type="button" class="btn btn-accent" (click)="uploadPhoto()">Upload a photo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="how">
+      <h2>How it works</h2>
+      <p>One order, many stores. We handle the buying and delivery.</p>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><b>Tell us what you want</b><span>Search, paste a link or upload a photo.</span></div>
+        <div class="step"><div class="n">2</div><b>We buy it for you</b><span>We purchase from each store, often in bulk for better prices.</span></div>
+        <div class="step"><div class="n">3</div><b>We bundle your items</b><span>Everything is checked and packed into one delivery.</span></div>
+        <div class="step"><div class="n">4</div><b>Delivered to your door</b><span>You're notified the moment it arrives.</span></div>
+      </div>
+      <div class="status-row">
+        <span class="status">Created</span>
+        <span class="status">→ Allocated</span>
+        <span class="status">→ Delivered to customer</span>
+      </div>
+    </div>
+
+    <div class="duo" id="track">
+      <div class="panel">
+        <h3>Track your order</h3>
+        <p>Enter your order number to see where it is.</p>
+        <form class="inline-form" (submit)="$event.preventDefault(); track()">
+          <input [(ngModel)]="trackId" name="trackId" placeholder="Order number" aria-label="Order number" />
+          <button type="submit" class="btn btn-primary">Track</button>
+        </form>
+        <p class="form-msg muted">Opens a full page with status, items, photos and amount to pay.</p>
+      </div>
+      <div class="panel">
+        <h3>Never miss a sale</h3>
+        <p>Weekly deals from Zara, Takealot, Jet and more.</p>
+        @if (subscribed()) {
+          <p class="form-msg">Thanks — you're on the list.</p>
+        } @else {
+          <form class="inline-form" (submit)="$event.preventDefault(); subscribe()">
+            <input [(ngModel)]="email" name="email" type="email" placeholder="Email address" aria-label="Email address" />
+            <button type="submit" class="btn btn-accent">Subscribe</button>
+          </form>
+        }
+      </div>
+    </div>
+  </div>
+</section>

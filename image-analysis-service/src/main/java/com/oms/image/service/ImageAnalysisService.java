@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oms.eventing.Topics;
 import com.oms.eventing.events.Events;
 import com.oms.eventing.idempotency.IdempotentConsumer;
-import com.oms.eventing.outbox.OutboxWriter;
+import com.oms.eventing.publish.DomainEventPublisher;
 import com.oms.image.vision.VisionProvider;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -16,18 +16,18 @@ import java.util.List;
 public class ImageAnalysisService {
 
     private final VisionProvider visionProvider;
-    private final OutboxWriter outboxWriter;
+    private final DomainEventPublisher events;
     private final IdempotentConsumer idempotentConsumer;
     private final ObjectMapper objectMapper;
 
     public ImageAnalysisService(
             VisionProvider visionProvider,
-            OutboxWriter outboxWriter,
+            DomainEventPublisher events,
             IdempotentConsumer idempotentConsumer,
             ObjectMapper objectMapper
     ) {
         this.visionProvider = visionProvider;
-        this.outboxWriter = outboxWriter;
+        this.events = events;
         this.idempotentConsumer = idempotentConsumer;
         this.objectMapper = objectMapper;
     }
@@ -43,7 +43,7 @@ public class ImageAnalysisService {
             List<Events.Candidate> candidates = matches.stream()
                     .map(m -> new Events.Candidate(m.itemRef(), m.confidence()))
                     .toList();
-            outboxWriter.enqueue(event.imageId(), Topics.IMAGES_MATCH_SUGGESTED,
+            events.publish(event.imageId(), Topics.IMAGES_MATCH_SUGGESTED,
                     new Events.ImageMatchSuggested(event.imageId(), candidates));
         });
     }

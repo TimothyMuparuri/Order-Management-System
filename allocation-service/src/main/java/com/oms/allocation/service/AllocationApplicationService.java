@@ -11,7 +11,7 @@ import com.oms.allocation.repo.OrderLineAllocationStateRepository;
 import com.oms.common.result.Result;
 import com.oms.eventing.Topics;
 import com.oms.eventing.events.Events;
-import com.oms.eventing.outbox.OutboxWriter;
+import com.oms.eventing.publish.DomainEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,20 +27,20 @@ public class AllocationApplicationService {
     private final BulkPurchaseLineRepository bulkLineRepository;
     private final AllocationRepository allocationRepository;
     private final OrderLineAllocationStateRepository orderLineStateRepository;
-    private final OutboxWriter outboxWriter;
+    private final DomainEventPublisher events;
 
     public AllocationApplicationService(
             BulkPurchaseRepository bulkPurchaseRepository,
             BulkPurchaseLineRepository bulkLineRepository,
             AllocationRepository allocationRepository,
             OrderLineAllocationStateRepository orderLineStateRepository,
-            OutboxWriter outboxWriter
+            DomainEventPublisher events
     ) {
         this.bulkPurchaseRepository = bulkPurchaseRepository;
         this.bulkLineRepository = bulkLineRepository;
         this.allocationRepository = allocationRepository;
         this.orderLineStateRepository = orderLineStateRepository;
-        this.outboxWriter = outboxWriter;
+        this.events = events;
     }
 
     @Transactional
@@ -87,7 +87,7 @@ public class AllocationApplicationService {
         }
         line.setReceivedQty(receivedQty);
         bulkLineRepository.save(line);
-        outboxWriter.enqueue(line.getBulkId(), Topics.BULK_RECEIVED,
+        events.publish(line.getBulkId(), Topics.BULK_RECEIVED,
                 new Events.BulkPurchaseReceived(line.getBulkId(), bulkLineId, receivedQty));
         return Result.ok(Boolean.TRUE);
     }
@@ -130,7 +130,7 @@ public class AllocationApplicationService {
         List<OrderLineAllocationState> orderLines = orderLineStateRepository.findByOrderId(orderLine.getOrderId());
         boolean allFully = !orderLines.isEmpty() && orderLines.stream().allMatch(OrderLineAllocationState::isFullyAllocated);
         if (allFully) {
-            outboxWriter.enqueue(orderLine.getOrderId(), Topics.ORDERS_FULLY_ALLOCATED,
+            events.publish(orderLine.getOrderId(), Topics.ORDERS_FULLY_ALLOCATED,
                     new Events.OrderFullyAllocated(orderLine.getOrderId(), System.currentTimeMillis()));
         }
         return Result.ok(new AllocationResponse(allocationId, qty, orderLine.isFullyAllocated(), allFully));

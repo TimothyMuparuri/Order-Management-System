@@ -1,0 +1,152 @@
+@if (message()) { <p class="ok banner">{{ message() }}</p> }
+@if (error()) { <p class="err banner">{{ error() }}</p> }
+
+<div class="desk-top">
+  <p class="muted">Select an order, buy the products, then update status.</p>
+  <button type="button" class="secondary" (click)="refresh()">Refresh</button>
+</div>
+
+<div class="layout">
+  <aside class="inbox">
+    <div class="filters">
+      <button type="button" [class.active]="filter() === 'all'" (click)="filter.set('all')">All</button>
+      <button type="button" [class.active]="filter() === 'WhatsApp'" (click)="filter.set('WhatsApp')">WhatsApp</button>
+      <button type="button" [class.active]="filter() === 'Created'" (click)="filter.set('Created')">New</button>
+      <button type="button" [class.active]="filter() === 'Allocated'" (click)="filter.set('Allocated')">Packed</button>
+      <button type="button" [class.active]="filter() === 'Delivered_To_Customer'" (click)="filter.set('Delivered_To_Customer')">Delivered</button>
+    </div>
+
+    @if (!filtered().length) {
+      <p class="muted pad">No orders in this list.</p>
+    } @else {
+      <ul>
+        @for (o of filtered(); track o.orderId) {
+          <li>
+            <button
+              type="button"
+              class="order-card"
+              [class.active]="selected()?.orderId === o.orderId"
+              (click)="open(o.orderId)"
+            >
+              <div class="oc-top">
+                <strong>{{ o.customerName || 'Customer' }}</strong>
+                <span class="pill" [attr.data-s]="o.orderStatus">{{ labelStatus(o.orderStatus) }}</span>
+              </div>
+              <div class="oc-meta">
+                <span class="source-tag" [attr.data-src]="o.source || 'Web'">{{ labelSource(o.source) }}</span>
+                <span>#{{ shortId(o.orderId) }}</span>
+                @if (o.phone) { <span>{{ o.phone }}</span> }
+                <span>{{ rand(o.orderTotal) }}</span>
+              </div>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </aside>
+
+  <main class="work">
+    @if (selected(); as order) {
+      <section class="customer-bar">
+        <div>
+          <h3>
+            {{ order.customerName || 'Customer' }}
+            <span class="source-tag big" [attr.data-src]="order.source || 'Web'">{{ labelSource(order.source) }}</span>
+          </h3>
+          <p class="muted">
+            Customer ID: <code>{{ order.customerId }}</code>
+            · Order #: <code>{{ order.orderId }}</code>
+          </p>
+          <p class="contact-line">
+            @if (order.phone) { <span>Phone: <b>{{ order.phone }}</b></span> }
+            @if (order.email) { <span>Email: <b>{{ order.email }}</b></span> }
+            @if (order.address) { <span>Address: <b>{{ order.address }}</b></span> }
+            @if (!order.phone && !order.email && !order.address) {
+              <span class="muted">No contact details on this order.</span>
+            }
+          </p>
+        </div>
+        <div class="totals">
+          <span class="lbl">Amount to collect</span>
+          <strong>{{ rand(order.orderTotal) }}</strong>
+        </div>
+      </section>
+
+      <section class="timeline">
+        <div class="step" [class.on]="order.orderStatus === 'Created' || order.orderStatus === 'Allocated' || order.orderStatus === 'Delivered_To_Customer'">
+          <b>1. New</b>
+          <span>{{ order.source === 'WhatsApp' ? 'Received on WhatsApp' : 'Customer placed order' }}</span>
+        </div>
+        <div class="step" [class.on]="order.orderStatus === 'Allocated' || order.orderStatus === 'Delivered_To_Customer'">
+          <b>2. Bought / packed</b>
+          <span>You purchased the items</span>
+        </div>
+        <div class="step" [class.on]="order.orderStatus === 'Delivered_To_Customer'">
+          <b>3. Delivered</b>
+          <span>Customer has it</span>
+        </div>
+      </section>
+
+      <p class="hint">{{ eta(order.orderStatus) }}</p>
+
+      <section class="actions-row">
+        <button type="button" class="secondary" (click)="setStatus(order.orderId, 'Created')" [disabled]="order.orderStatus === 'Created'">
+          Mark: still buying
+        </button>
+        <button type="button" (click)="setStatus(order.orderId, 'Allocated')" [disabled]="order.orderStatus === 'Allocated'">
+          Mark: bought &amp; packed
+        </button>
+        <button type="button" class="accent" (click)="deliver(order.orderId)" [disabled]="order.orderStatus === 'Delivered_To_Customer'">
+          Mark: delivered to customer
+        </button>
+      </section>
+
+      <h4 class="section-title">What to buy ({{ order.lines?.length || 0 }} items)</h4>
+      <div class="lines">
+        @for (line of order.lines; track line.orderLineId) {
+          <article class="line">
+            <div class="thumb" [class.empty]="!line.imageUrl">
+              @if (line.imageUrl) {
+                <img [src]="line.imageUrl" [alt]="line.productName || 'Product'" />
+              } @else {
+                <span>No photo</span>
+              }
+            </div>
+            <div class="info">
+              <div class="name-row">
+                <strong>{{ line.productName || line.itemRef }}</strong>
+                <span class="store">{{ line.storeName ? 'Store: ' + line.storeName : 'Store: unknown' }}</span>
+              </div>
+              <div class="nums">
+                <span>Qty <b>{{ line.requestedQty }}</b></span>
+                @if (line.productSize) {
+                  <span class="size-pill">Size <b>{{ line.productSize }}</b></span>
+                }
+                <span>Unit <b>{{ rand(line.unitPrice) }}</b></span>
+                <span>Line <b>{{ rand(line.lineTotal) }}</b></span>
+              </div>
+              <div class="link-box">
+                <span class="lbl">Product link</span>
+                @if (line.productUrl) {
+                  <a class="url" [href]="line.productUrl" target="_blank" rel="noopener">{{ line.productUrl }}</a>
+                  <div class="buy-actions">
+                    <a class="btn-buy" [href]="line.productUrl" target="_blank" rel="noopener">
+                      Open at {{ line.storeName || 'store' }} ↗
+                    </a>
+                    <button type="button" class="ghost" (click)="copyLink(line.productUrl!)">Copy link</button>
+                  </div>
+                } @else {
+                  <span class="muted">No product link available for this line.</span>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="empty">
+        <p>Select an order on the left to see products, prices, and store links.</p>
+      </div>
+    }
+  </main>
+</div>

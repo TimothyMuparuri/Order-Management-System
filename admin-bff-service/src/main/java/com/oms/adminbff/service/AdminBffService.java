@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,22 +20,50 @@ public class AdminBffService {
 
     private final RestClient restClient;
     private final String orderServiceUrl;
+    private final String intakeServiceUrl;
     private final String allocationServiceUrl;
     private final String deliveryServiceUrl;
 
     public AdminBffService(
             RestClient.Builder builder,
             @Value("${oms.order-service.url:http://localhost:8081}") String orderServiceUrl,
+            @Value("${oms.intake-service.url:http://localhost:8082}") String intakeServiceUrl,
             @Value("${oms.allocation-service.url:http://localhost:8084}") String allocationServiceUrl,
             @Value("${oms.delivery-service.url:http://localhost:8085}") String deliveryServiceUrl
     ) {
         this.restClient = builder.build();
         this.orderServiceUrl = orderServiceUrl;
+        this.intakeServiceUrl = intakeServiceUrl;
         this.allocationServiceUrl = allocationServiceUrl;
         this.deliveryServiceUrl = deliveryServiceUrl;
     }
 
-    @Cacheable("orderSummaries")
+    /**
+     * Create an order via the same intake API the website uses (e.g. WhatsApp manual entry).
+     */
+    @CacheEvict(value = {"orderSummaries", "orderDetails"}, allEntries = true)
+    public Result<Map<String, Object>> createOrder(Map<String, Object> body) {
+        try {
+            Map<String, Object> payload = body == null ? new HashMap<>() : new HashMap<>(body);
+            if (!payload.containsKey("source") || payload.get("source") == null
+                    || String.valueOf(payload.get("source")).isBlank()) {
+                payload.put("source", "WhatsApp");
+            }
+            Map<String, Object> response = restClient.post()
+                    .uri(intakeServiceUrl + "/api/orders")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(payload)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {});
+            return Result.ok(response);
+        } catch (RestClientResponseException e) {
+            return Result.validation("ORDER_CREATE_FAILED", e.getResponseBodyAsString());
+        } catch (Exception e) {
+            return Result.validation("ORDER_CREATE_FAILED", e.getMessage() == null ? "Create failed" : e.getMessage());
+        }
+    }
+
+    /** Not cached — new customer orders must appear on Refresh immediately. */
     public List<Map<String, Object>> viewOrderList() {
         return restClient.get()
                 .uri(orderServiceUrl + "/api/orders")
@@ -123,6 +152,7 @@ public class AdminBffService {
         }
     }
 
+    @CacheEvict(value = {"orderSummaries", "orderDetails"}, allEntries = true)
     public Result<Map<String, Object>> markOrderDelivered(String orderId, Map<String, Object> body) {
         try {
             Map<String, Object> response = restClient.post()
@@ -131,6 +161,17 @@ public class AdminBffService {
                     .body(body == null ? Map.of() : body)
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {});
+            // Keep order-service status in sync so admin list/detail stay accurate.
+            try {
+                restClient.put()
+                        .uri(orderServiceUrl + "/api/orders/" + orderId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(Map.of("status", "Delivered_To_Customer"))
+                        .retrieve()
+                        .toBodilessEntity();
+            } catch (RestClientResponseException ignored) {
+                // Delivery already succeeded; status sync is best-effort.
+            }
             return Result.ok(response);
         } catch (RestClientResponseException e) {
             return Result.validation("DELIVER_FAILED", e.getResponseBodyAsString());

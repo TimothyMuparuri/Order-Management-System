@@ -1,12 +1,10 @@
 package com.oms.order.service;
 
 import com.oms.common.result.Result;
-import com.oms.eventing.outbox.OutboxWriter;
+import com.oms.eventing.publish.DomainEventPublisher;
 import com.oms.order.api.dto.OrderDtos;
 import com.oms.order.domain.ContactInfo;
 import com.oms.order.domain.Customer;
-import com.oms.order.domain.Item;
-import com.oms.order.domain.ItemSpec;
 import com.oms.order.repo.CustomerOrderLineRepository;
 import com.oms.order.repo.CustomerOrderRepository;
 import com.oms.order.repo.CustomerRepository;
@@ -33,14 +31,14 @@ class OrderApplicationServiceTest {
     @Mock ItemRepository itemRepository;
     @Mock CustomerOrderRepository orderRepository;
     @Mock CustomerOrderLineRepository lineRepository;
-    @Mock OutboxWriter outboxWriter;
+    @Mock DomainEventPublisher events;
 
     OrderApplicationService service;
 
     @BeforeEach
     void setUp() {
         service = new OrderApplicationService(
-                customerRepository, itemRepository, orderRepository, lineRepository, outboxWriter);
+                customerRepository, itemRepository, orderRepository, lineRepository, events);
     }
 
     @Test
@@ -59,15 +57,27 @@ class OrderApplicationServiceTest {
 
     @Test
     void createOrderPersistsWhenValid() {
-        when(customerRepository.existsById("c1")).thenReturn(true);
+        when(customerRepository.findById("c1")).thenReturn(Optional.of(
+                new Customer("c1", "Alice", new ContactInfo("a@x.com", null))));
         when(itemRepository.existsById("sku-1")).thenReturn(true);
         when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(lineRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Result<OrderDtos.OrderResponse> result = service.createOrder(
-                "c1", List.of(new OrderDtos.ValidatedLine("sku-1", 2)));
+                "c1",
+                "Alice",
+                "a@x.com",
+                "0821234567",
+                "12 Main Rd, Cape Town",
+                "WhatsApp",
+                List.of(new OrderDtos.ValidatedLine(
+                        "sku-1", 2, "Mouse", "Takealot", null, null, null, new java.math.BigDecimal("149.00"))));
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.toOptional().orElseThrow().customerId()).isEqualTo("c1");
+        assertThat(result.toOptional().orElseThrow().customerName()).isEqualTo("Alice");
+        assertThat(result.toOptional().orElseThrow().phone()).isEqualTo("0821234567");
+        assertThat(result.toOptional().orElseThrow().source()).isEqualTo("WhatsApp");
+        assertThat(result.toOptional().orElseThrow().orderTotal()).isEqualByComparingTo("298.00");
     }
 }

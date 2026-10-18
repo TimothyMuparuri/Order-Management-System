@@ -1,51 +1,14 @@
 services:
-  postgres-order:
+  # Single shared database for all OMS services
+  postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: order_pg
+      POSTGRES_DB: oms
       POSTGRES_USER: oms
       POSTGRES_PASSWORD: oms
     ports: ["5432:5432"]
-
-  postgres-intake:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: intake_pg
-      POSTGRES_USER: oms
-      POSTGRES_PASSWORD: oms
-    ports: ["5433:5432"]
-
-  postgres-alloc:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: alloc_pg
-      POSTGRES_USER: oms
-      POSTGRES_PASSWORD: oms
-    ports: ["5434:5432"]
-
-  postgres-delivery:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: delivery_pg
-      POSTGRES_USER: oms
-      POSTGRES_PASSWORD: oms
-    ports: ["5435:5432"]
-
-  postgres-notif:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: notif_pg
-      POSTGRES_USER: oms
-      POSTGRES_PASSWORD: oms
-    ports: ["5436:5432"]
-
-  postgres-image:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: image_pg
-      POSTGRES_USER: oms
-      POSTGRES_PASSWORD: oms
-    ports: ["5437:5432"]
+    volumes:
+      - oms_pg_data:/var/lib/postgresql/data
 
   kafka:
     image: apache/kafka-native:3.8.0
@@ -72,3 +35,6 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+
+volumes:
+  oms_pg_data:

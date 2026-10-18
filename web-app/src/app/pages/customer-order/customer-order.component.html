@@ -1,54 +1,161 @@
 <section class="panel">
-  <h2>Submit order</h2>
-  <p class="muted">1–100 lines. Each line needs a search term or an image (JPEG/PNG ≤ 10 MB).</p>
+  <header class="head">
+    <div>
+      <h2>Your cart</h2>
+      <p class="muted">
+        @if (isEmpty()) {
+          No products yet. Browse the shop and tap a product to add it here.
+        } @else {
+          {{ itemCount() }} item{{ itemCount() === 1 ? '' : 's' }} · send this cart to admin as your order.
+        }
+      </p>
+    </div>
+    <button type="button" class="secondary" (click)="keepShopping()">
+      {{ isEmpty() ? 'Browse shop' : 'Add more products' }}
+    </button>
+  </header>
 
-  <label>
-    Customer ID
-    <input [(ngModel)]="customerId" name="customerId" />
-  </label>
+  @if (isEmpty() && !created()) {
+    <div class="empty">
+      <p>Your cart is empty.</p>
+      <a routerLink="/" fragment="sale" class="btn-link">Shop deals</a>
+    </div>
+  } @else if (!isEmpty()) {
+    <div class="customer-grid">
+      <label>
+        Your name
+        <input [(ngModel)]="customerName" name="customerName" placeholder="e.g. Alice Molefe" maxlength="200" required />
+      </label>
+      <label>
+        Phone number
+        <input [(ngModel)]="phone" name="phone" type="tel" placeholder="e.g. 082 123 4567" maxlength="40" required />
+      </label>
+      <label>
+        Email <span class="opt">(optional)</span>
+        <input [(ngModel)]="email" name="email" type="email" placeholder="you@example.com" maxlength="200" />
+      </label>
+      <label>
+        Customer ID
+        <input [(ngModel)]="customerId" name="customerId" placeholder="Your customer id" />
+      </label>
+      <label class="full">
+        Delivery address <span class="opt">(optional)</span>
+        <input [(ngModel)]="address" name="address" placeholder="Street, suburb, city" maxlength="400" />
+      </label>
+    </div>
 
-  @for (line of lines(); track $index; let i = $index) {
-    <article class="line">
-      <header>
-        <strong>Line {{ i + 1 }}</strong>
-        <button type="button" class="ghost" (click)="removeLine(i)" [disabled]="lines().length === 1">Remove</button>
-      </header>
-      <label>
-        Search term
-        <input [(ngModel)]="line.searchTerm" [name]="'search' + i" maxlength="200" />
-      </label>
-      <label>
-        Quantity
-        <input type="number" [(ngModel)]="line.quantity" [name]="'qty' + i" min="1" max="10000" />
-      </label>
-      <label>
-        Or upload image
-        <input type="file" accept="image/jpeg,image/png" (change)="onImageSelected(i, $event)" />
-      </label>
-      @if (line.imageId) {
-        <p class="muted">Image: {{ line.imageId }}</p>
+    <div class="cart-list">
+      @for (line of lines(); track line.id) {
+        <article class="line">
+          <div class="thumb" [class.empty]="!line.imageUrl">
+            @if (line.imageUrl) {
+              <img [src]="line.imageUrl" [alt]="line.productName" />
+            } @else {
+              <span>No photo</span>
+            }
+          </div>
+
+          <div class="fields">
+            <header>
+              <div>
+                <strong>{{ line.productName }}</strong>
+                @if (line.store) {
+                  <div class="store">{{ line.store }}</div>
+                }
+              </div>
+              <button type="button" class="ghost" (click)="removeLine(line.id)">Remove</button>
+            </header>
+
+            @if (cart.lineNeedsSize(line)) {
+              <label class="size-field" [class.missing]="!line.size">
+                Size (required)
+                <select
+                  [ngModel]="line.size || ''"
+                  (ngModelChange)="setSize(line.id, $event)"
+                  [name]="'size' + line.id"
+                >
+                  <option value="" disabled>Select size</option>
+                  @for (s of cart.sizesFor(line); track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            <div class="row">
+              <label>
+                Qty
+                <input
+                  type="number"
+                  [ngModel]="line.quantity"
+                  (ngModelChange)="setQuantity(line.id, $event)"
+                  [name]="'qty' + line.id"
+                  min="1"
+                  max="10000"
+                />
+              </label>
+              <div class="price-block">
+                <div><span class="lbl">Unit</span> <b>{{ rand(line.unitPrice) }}</b></div>
+                <div><span class="lbl">Line</span> <b>{{ rand(cart.lineTotal(line)) }}</b></div>
+                @if (line.size) {
+                  <div><span class="lbl">Size</span> <b>{{ line.size }}</b></div>
+                }
+              </div>
+              <label class="file">
+                Photo
+                <input type="file" accept="image/jpeg,image/png" (change)="onImageSelected(line.id, $event)" />
+              </label>
+            </div>
+          </div>
+        </article>
       }
-      @if (line.candidates.length) {
-        <div class="candidates">
-          <p>Confirm a match:</p>
-          @for (c of line.candidates; track c.itemRef) {
-            <button type="button" (click)="confirmMatch(i, c.itemRef)" [class.active]="line.itemRef === c.itemRef">
-              {{ c.itemRef }} ({{ c.confidence }})
-            </button>
-          }
-        </div>
-      }
-    </article>
+    </div>
+
+    <div class="totals">
+      <div>
+        <span>Order total</span>
+        <strong>{{ rand(subtotal()) }}</strong>
+      </div>
+      <p class="muted">Prices shown are from the shop listing. Admin uses this cart to buy and fulfil.</p>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="secondary" (click)="keepShopping()">Add more products</button>
+      <button type="button" (click)="submit()">Place order</button>
+    </div>
   }
 
-  <div class="actions">
-    <button type="button" class="secondary" (click)="addLine()">Add line</button>
-    <button type="button" (click)="submit()">Submit order</button>
-  </div>
-
-  @if (message()) {
-    <p class="ok">{{ message() }}</p>
+  @if (created(); as c) {
+    <div class="receipt">
+      <h3>Order placed</h3>
+      <dl>
+        <div><dt>Order number</dt><dd>{{ c.orderId }}</dd></div>
+        <div><dt>Customer name</dt><dd>{{ c.customerName }}</dd></div>
+        @if (c.phone) {
+          <div><dt>Phone</dt><dd>{{ c.phone }}</dd></div>
+        }
+        @if (c.email) {
+          <div><dt>Email</dt><dd>{{ c.email }}</dd></div>
+        }
+        @if (c.address) {
+          <div><dt>Address</dt><dd>{{ c.address }}</dd></div>
+        }
+        <div><dt>Customer ID</dt><dd>{{ c.customerId }}</dd></div>
+        @if (c.orderTotal != null) {
+          <div><dt>Order total</dt><dd>{{ rand(c.orderTotal) }}</dd></div>
+        }
+        @if (c.orderStatus) {
+          <div><dt>Status</dt><dd>{{ c.orderStatus }}</dd></div>
+        }
+      </dl>
+      <p class="muted">Save your order number to track status and amount to pay.</p>
+      <div class="actions">
+        <a class="btn-link" [routerLink]="['/orders/track']" [queryParams]="{ id: c.orderId }">Track this order</a>
+        <button type="button" class="secondary" (click)="keepShopping()">Shop again</button>
+      </div>
+    </div>
   }
+
   @if (error()) {
     <p class="err">{{ error() }}</p>
   }

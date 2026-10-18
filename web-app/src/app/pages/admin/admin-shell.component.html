@@ -1,0 +1,39 @@
+<div class="admin-shell">
+  <aside class="side">
+    <a routerLink="/admin" class="side-brand">
+      <img src="logo.svg" width="28" height="28" alt="" />
+      <div>
+        <strong>Admin</strong>
+        <span>sapersonalshopper</span>
+      </div>
+    </a>
+
+    <nav class="side-nav">
+      <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
+      <a routerLink="/admin/orders" routerLinkActive="active">Orders</a>
+      <a routerLink="/admin/whatsapp" routerLinkActive="active">WhatsApp</a>
+    </nav>
+
+    <div class="side-spacer" aria-hidden="true"></div>
+
+    <div class="side-foot">
+      <a routerLink="/" class="side-link">← Back to shop</a>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-top">
+      <div>
+        <p class="eyebrow">Fulfilment desk</p>
+        <h1>{{ pageTitle() }}</h1>
+      </div>
+      <div class="admin-top-actions">
+        <a routerLink="/admin/whatsapp" class="btn-wa">New WhatsApp order</a>
+        <a routerLink="/admin/orders" class="btn-ink">Open orders</a>
+      </div>
+    </header>
+    <div class="admin-body">
+      <router-outlet />
+    </div>
+  </div>
+</div>

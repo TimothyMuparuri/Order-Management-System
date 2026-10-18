@@ -30,6 +30,10 @@ spring:
           uri: ${OMS_ADMIN_URL:http://localhost:8083}
           predicates:
             - Path=/api/admin/**
+        - id: catalog
+          uri: ${OMS_ADMIN_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/catalog/**
         - id: order-service
           uri: ${OMS_ORDER_URL:http://localhost:8081}
           predicates:

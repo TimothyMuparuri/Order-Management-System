@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMS — Architecture in plain English</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --panel2: #1d2435; --ink: #e6e9ef;
+    --muted: #9aa4b8; --line: #2a3346; --accent: #6ea8fe; --accent2: #7ee0c3;
+    --chip: #243049; --code: #0b0f18;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 22px 18px;
+  }
+  nav .brand { font-weight: 700; font-size: 16px; margin-bottom: 18px; color: #fff; }
+  nav .brand span { color: var(--accent); }
+  nav h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 8px; }
+  nav a { display: block; color: var(--ink); text-decoration: none; padding: 6px 10px; border-radius: 7px; font-size: 14px; }
+  nav a:hover { background: var(--chip); color: var(--accent); }
+  main { padding: 40px 48px 120px; max-width: 900px; }
+  header.page { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 8px; }
+  header.page h1 { margin: 0 0 6px; font-size: 28px; }
+  header.page p { margin: 0; color: var(--muted); }
+  section { padding: 28px 0; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 22px; margin: 0 0 14px; color: #fff; }
+  section h3 { font-size: 16px; margin: 18px 0 8px; color: var(--accent2); }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  ul.tight { margin: 8px 0; padding-left: 1.2em; }
+  ul.tight li { margin: 4px 0; }
+  .idea {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 10px; padding: 12px 14px; margin: 8px 0;
+  }
+  .idea b { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .chip {
+    background: var(--chip); border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 12px; font-size: 13px; color: var(--ink); cursor: pointer;
+  }
+  .chip:hover, .chip.active { border-color: var(--accent); color: var(--accent); }
+  .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card .n {
+    display: inline-block; background: var(--accent); color: #07101f; font-weight: 700;
+    border-radius: 7px; padding: 2px 8px; font-size: 12px; margin-bottom: 8px;
+  }
+  .card h4 { margin: 0 0 6px; color: var(--accent); font-size: 15px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .meta code {
+    background: var(--code); border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 6px; color: var(--accent2); font-size: 12px;
+  }
+  ol.steps { margin: 8px 0; padding-left: 1.3em; }
+  ol.steps li { margin: 6px 0; }
+  .story { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .story li {
+    display: flex; gap: 10px; margin: 8px 0; align-items: flex-start;
+  }
+  .story li::before {
+    counter-increment: s; content: counter(s);
+    background: var(--chip); border: 1px solid var(--line); color: var(--accent);
+    font-weight: 700; font-size: 12px; min-width: 24px; height: 24px;
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  }
+  footer { color: var(--muted); font-size: 12.5px; padding-top: 24px; }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav { position: static; height: auto; }
+    main { padding: 24px; }
+    .status-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">Order <span>MS</span> &middot; Guide</div>
+  <h2>Contents</h2>
+  <a href="#ideas">Three ideas</a>
+  <a href="#path">How a request moves</a>
+  <a href="#status">Order status</a>
+  <a href="#services">Services (examples)</a>
+  <a href="#story">Full story</a>
+  <h2>Related</h2>
+  <a href="design.html">design.html</a>
+  <a href="data-dictionary.html">data-dictionary.html</a>
+</nav>
+<main>
+<header class="page">
+  <h1>OMS architecture — plain English</h1>
+  <p>One shop, many small programs. Click a service below for a worked example.</p>
+</header>
+
+<section id="ideas">
+  <h2>Three ideas you need</h2>
+  <div class="idea"><b>Microservice</b> — a small app with one job (orders, stock, delivery…). Each can start/stop alone.</div>
+  <div class="idea"><b>Shared database</b> — one <code>oms</code> notebook for all services (simpler for now). Each still owns its tables; they talk via API or events, not by editing each other’s rows ad hoc.</div>
+  <div class="idea"><b>Kafka</b> — a shared notice board. After saving data, a service posts “order created”; others read and react later.</div>
+</section>
+
+<section id="path">
+  <h2>How a request moves</h2>
+  <p class="muted">You (browser) → Gateway → one service → shared DB. Side effects → Kafka → other services.</p>
+  <div class="chips">
+    <span class="chip">1. Angular UI</span>
+    <span class="chip">2. api-gateway :8090</span>
+    <span class="chip">3. One service</span>
+    <span class="chip">4. Shared oms DB</span>
+    <span class="chip">5. Kafka notice</span>
+    <span class="chip">6. Other services react</span>
+  </div>
+</section>
+
+<section id="status">
+  <h2>Order life (status)</h2>
+  <div class="status-grid">
+    <div class="card"><div class="n">1</div><h4>Created</h4><p>order-service saved the order</p></div>
+    <div class="card"><div class="n">2</div><h4>Allocated</h4><p>allocation filled every line from bulk stock</p></div>
+    <div class="card"><div class="n">3</div><h4>Delivered_To_Customer</h4><p>admin marked delivered → notify customer</p></div>
+  </div>
+</section>
+
+<section id="services">
+  <h2>Pick a service — one example</h2>
+  <div class="chips" id="service-tabs"></div>
+  <div class="card" id="service-detail" style="margin-top:12px"></div>
+</section>
+
+<section id="story">
+  <h2>One story across services</h2>
+  <p class="muted">Alice orders 2 mice → gets notified</p>
+  <ol class="story">
+    <li>intake validates + may run image match → asks order-service to save.</li>
+    <li>order-service saves ORD-1001 → posts OrderCreated on Kafka.</li>
+    <li>delivery-service hears it → status Created.</li>
+    <li>allocation-service hears it → knows Alice needs 2 mice.</li>
+    <li>Admin records bulk buy, receives stock, allocates 2 → OrderFullyAllocated.</li>
+    <li>delivery-service → status Allocated.</li>
+    <li>Admin marks delivered → Delivered_To_Customer + NotificationRequested.</li>
+    <li>notification-service sends the message to Alice.</li>
+  </ol>
+  <h3>Why not one big app?</h3>
+  <p>Each piece scales and fails alone. Kafka lets slow work (AI, email) happen without blocking the click. Tables stay grouped by service even though they live in one shared <code>oms</code> database.</p>
+</section>
+
+<footer>
+  Open this file in a browser: <code>architecture-guide.html</code> in the project root
+  (same folder as <code>design.html</code>).
+</footer>
+</main>
+</div>
+
+<script>
+const SERVICES = [
+  {
+    id: "gateway", name: "api-gateway", port: "8090", db: "none",
+    job: "Reception desk — one door for the web app",
+    example: "Admin opens Orders page → browser calls /api/admin/orders",
+    steps: [
+      "Browser hits localhost:8090 (never talks to services directly).",
+      "Gateway matches path /api/admin/** → forwards to admin-bff (8083).",
+      "Adds CORS so Angular on another port is allowed.",
+      "Returns the answer to the browser."
+    ],
+    talksTo: "All services via HTTP routing"
+  },
+  {
+    id: "intake", name: "intake-service", port: "8082", db: "shared oms",
+    job: "Front desk for new customer orders",
+    example: "Customer submits: 2× wireless mouse + a product photo",
+    steps: [
+      "Checks the form is valid (quantities, image type/size).",
+      "If there is a photo: store file → after commit publish ImageUploaded to Kafka.",
+      "After match is confirmed: call order-service to create the real order.",
+      "Nothing is half-saved — invalid request = no data kept."
+    ],
+    talksTo: "order-service (HTTP) · Kafka (ImageUploaded)"
+  },
+  {
+    id: "order", name: "order-service", port: "8081", db: "shared oms",
+    job: "Official record book of customers and orders",
+    example: "Create order ORD-1001 for Alice: line mouse × 2",
+    steps: [
+      "Writes Customer + Order + OrderLines into the shared oms database.",
+      "Assigns an immutable order id.",
+      "After the DB commit succeeds, publishes OrderCreated to Kafka.",
+      "delivery + allocation listen and update their tables in the same DB."
+    ],
+    talksTo: "Kafka (OrderCreated)"
+  },
+  {
+    id: "admin", name: "admin-bff-service", port: "8083", db: "shared oms (catalog)",
+    job: "Admin helper — gathers data for the console",
+    example: "Admin clicks Orders → needs a list with status + lines",
+    steps: [
+      "Receives /api/admin/orders from the gateway.",
+      "Calls order-service (and others) behind the scenes.",
+      "Shapes one simple JSON response for the Angular admin UI.",
+      "Also owns catalog scrape into shared oms + images."
+    ],
+    talksTo: "order / allocation / delivery via HTTP"
+  },
+  {
+    id: "allocation", name: "allocation-service", port: "8084", db: "shared oms",
+    job: "Stock matching — bulk buys → customer lines",
+    example: "Admin bought 50 mice on AliExpress; assign 2 to ORD-1001",
+    steps: [
+      "Records bulk purchase + lines in shared oms.",
+      "Admin marks 50 received → updates receivedQty.",
+      "Creates Allocation(bulk line → order line, qty 2).",
+      "Guards: never exceed received stock or customer request.",
+      "When every line is full → Kafka OrderFullyAllocated (after commit)."
+    ],
+    talksTo: "Kafka (OrderFullyAllocated) · listens OrderCreated"
+  },
+  {
+    id: "delivery", name: "delivery-service", port: "8085", db: "shared oms",
+    job: "Status machine — Created → Allocated → Delivered",
+    example: "Admin marks ORD-1001 delivered to Alice",
+    steps: [
+      "On OrderCreated → set status Created (history row).",
+      "On OrderFullyAllocated → Created → Allocated.",
+      "Admin marks delivered → Allocated → Delivered_To_Customer.",
+      "Writes timestamp + duration; refuses double-mark.",
+      "After commit publishes NotificationRequested to Kafka."
+    ],
+    talksTo: "Kafka in + out (status events, NotificationRequested)"
+  },
+  {
+    id: "notification", name: "notification-service", port: "8086", db: "shared oms",
+    job: "Messenger — tell the customer it arrived",
+    example: "Send “ORD-1001 delivered” to Alice",
+    steps: [
+      "Reads NotificationRequested from Kafka.",
+      "Sends message (email/SMS stub in local run).",
+      "Retries up to 3 times if send fails.",
+      "Records success/failure; does not undo delivery status."
+    ],
+    talksTo: "Kafka only (consumer)"
+  },
+  {
+    id: "image", name: "image-analysis-service", port: "8087", db: "shared oms + S3",
+    job: "AI matcher — photo → product suggestions",
+    example: "Customer uploaded blurry mouse photo",
+    steps: [
+      "Consumes ImageUploaded from Kafka.",
+      "Loads image from object storage.",
+      "Calls VisionProvider → candidate items + confidence.",
+      "After commit publishes ImageMatchSuggested for human confirm in UI."
+    ],
+    talksTo: "Kafka (ImageUploaded in, ImageMatchSuggested out)"
+  }
+];
+
+let selected = "intake";
+
+function render() {
+  const tabs = document.getElementById("service-tabs");
+  tabs.innerHTML = SERVICES.map(s =>
+    `<button type="button" class="chip${s.id === selected ? " active" : ""}" data-id="${s.id}">${s.name}</button>`
+  ).join("");
+  tabs.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => { selected = btn.dataset.id; render(); });
+  });
+
+  const s = SERVICES.find(x => x.id === selected);
+  document.getElementById("service-detail").innerHTML = `
+    <h4 style="margin:0 0 4px;font-size:18px;color:#fff">${s.name}</h4>
+    <div class="meta"><code>:${s.port}</code> · <code>${s.db}</code></div>
+    <p style="margin:12px 0 0;font-weight:600">${s.job}</p>
+    <h3>Example</h3>
+    <p>${s.example}</p>
+    <h3>What happens (step by step)</h3>
+    <ol class="steps">${s.steps.map(t => `<li>${t}</li>`).join("")}</ol>
+    <p class="meta">Connects to: ${s.talksTo}</p>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

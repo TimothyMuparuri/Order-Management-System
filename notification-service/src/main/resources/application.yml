@@ -4,10 +4,11 @@ spring:
   application:
     name: notification-service
   datasource:
-    url: jdbc:h2:mem:notification_pg;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    # Local pgAdmin PostgreSQL 17 — database: order-ms (override with OMS_DB_* env vars)
+    url: "${OMS_DB_URL:jdbc:postgresql://localhost:5432/order-ms}"
+    username: ${OMS_DB_USER:postgres}
+    password: ${OMS_DB_PASSWORD:Sizor.kom21}
+    driver-class-name: ${OMS_DB_DRIVER:org.postgresql.Driver}
   jpa:
     hibernate:
       ddl-auto: update
@@ -22,10 +23,6 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: earliest
-oms:
-  outbox:
-    relay:
-      enabled: true
 management:
   endpoints:
     web:

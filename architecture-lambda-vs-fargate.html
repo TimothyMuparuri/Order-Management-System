@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMS — Lambda vs Fargate (this codebase)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --ink: #e6e9ef; --muted: #9aa4b8;
+    --line: #2a3346; --accent: #6ea8fe; --ok: #7ee0c3; --warn: #ffcf7a; --bad: #ff8a7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 28px 100px; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 { font-size: 20px; margin: 36px 0 12px; color: #fff; }
+  p, li { color: var(--ink); }
+  .muted { color: var(--muted); }
+  .diagram {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; margin: 14px 0;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); background: #1d2435; }
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 999px; margin-right: 6px;
+  }
+  .tag.fargate { background: rgba(126,224,195,.15); color: var(--ok); }
+  .tag.lambda { background: rgba(110,168,254,.15); color: var(--accent); }
+  .tag.hybrid { background: rgba(255,207,122,.12); color: var(--warn); }
+  .tag.avoid { background: rgba(255,138,122,.12); color: var(--bad); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; margin: 10px 0;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 16px; color: var(--accent); }
+  a { color: var(--accent); }
+  footer { color: var(--muted); font-size: 12.5px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Lambda vs Fargate for <em>this</em> OMS</h1>
+  <p class="muted">Mapped only to modules in <code>order-ms</code> — not a generic cloud lecture.</p>
+
+  <h2>1. What you have today</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  WEB["web-app<br/>Angular on your PC"] --> GW["api-gateway<br/>:8090"]
+  GW --> INT["intake :8082"]
+  GW --> ORD["order :8081"]
+  GW --> ADM["admin-bff :8083<br/>+ catalog scrape"]
+  GW --> ALL["allocation :8084"]
+  GW --> DEL["delivery :8085"]
+  INT & ORD & ALL & DEL -.Kafka.-> K["Kafka :9092"]
+  K --> IMG["image-analysis :8087"]
+  K --> NOT["notification :8086"]
+  K --> ALL
+  K --> DEL
+    </pre>
+  </div>
+  <p class="muted">8 always-on JVMs + Kafka + H2-in-memory. Same shape as “many small servers.”</p>
+
+  <h2>2. Option A — Fargate (closest to today)</h2>
+  <p>Each Spring Boot module stays a <strong>container</strong>. AWS runs them for you. Kafka + Postgres become managed services.</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  WEB["web-app → S3 + CloudFront"] --> APIGW["Amazon ALB / API Gateway"]
+  APIGW --> GW["ECS Fargate<br/>api-gateway"]
+  GW --> INT["Fargate intake"]
+  GW --> ORD["Fargate order"]
+  GW --> ADM["Fargate admin-bff"]
+  GW --> ALL["Fargate allocation"]
+  GW --> DEL["Fargate delivery"]
+  INT & ORD & ALL & DEL --> MSK["Amazon MSK<br/>or self-managed Kafka"]
+  MSK --> IMG["Fargate image-analysis"]
+  MSK --> NOT["Fargate notification"]
+  ORD & INT & ALL & DEL & ADM & IMG & NOT --> RDS[("RDS · one shared oms DB")]
+  ADM --> S3[("S3 catalog images")]
+    </pre>
+  </div>
+
+  <table>
+    <tr><th>Module</th><th>Where it goes</th><th>Change needed</th></tr>
+    <tr><td><code>api-gateway</code></td><td><span class="tag fargate">Fargate</span> (or replace with ALB+routes)</td><td>Small — Docker image you already have patterns for</td></tr>
+    <tr><td><code>order / intake / allocation / delivery</code></td><td><span class="tag fargate">Fargate</span></td><td>Swap H2 → one shared RDS <code>oms</code>; point Kafka to MSK</td></tr>
+    <tr><td><code>notification / image-analysis</code></td><td><span class="tag fargate">Fargate</span></td><td>Same — they are Kafka consumers (need always-on)</td></tr>
+    <tr><td><code>admin-bff</code> + catalog scrape</td><td><span class="tag fargate">Fargate</span> + optional EventBridge cron hitting <code>/api/catalog/scrape</code></td><td>Images → S3 instead of local disk</td></tr>
+    <tr><td><code>web-app</code></td><td><span class="tag fargate">S3 + CloudFront</span></td><td>Static build; <code>apiBaseUrl</code> → your AWS URL</td></tr>
+    <tr><td><code>oms-common / oms-eventing</code></td><td>Libraries inside the jars</td><td>No separate deploy</td></tr>
+  </table>
+
+  <div class="card">
+    <h3>Why Fargate fits this codebase</h3>
+    <ul>
+      <li>Your services are already long-running Spring Boot apps.</li>
+      <li>Kafka consumers (<code>delivery</code>, <code>allocation</code>, <code>notification</code>, <code>image-analysis</code>) need to stay awake.</li>
+      <li>Least rewrite — mostly packaging + config + managed Kafka/DB.</li>
+    </ul>
+  </div>
+
+  <h2>3. Option B — Lambda-first (big rewrite)</h2>
+  <p>HTTP pieces become functions. Event pieces stop using “Kafka consumer in a JVM” and move to queues/buses — or stay off Lambda.</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  WEB["web-app → S3 + CloudFront"] --> APIGW["Amazon API Gateway"]
+  APIGW --> LINT["Lambda intake"]
+  APIGW --> LORD["Lambda order"]
+  APIGW --> LADM["Lambda admin-bff reads"]
+  APIGW --> LALL["Lambda allocation APIs"]
+  APIGW --> LDEL["Lambda delivery APIs"]
+  LORD --> BUS["EventBridge / SQS<br/>(replaces Kafka topics)"]
+  BUS --> LNOT["Lambda notification"]
+  BUS --> LIMG["Lambda image-analysis<br/>or Step Functions"]
+  BUS --> LALL2["Lambda allocation reactions"]
+  BUS --> LDEL2["Lambda delivery reactions"]
+  CRON["EventBridge weekly"] --> LSCRAPE["Lambda catalog scrape"]
+  LSCRAPE --> S3[("S3 images")]
+  LORD & LINT & LALL & LDEL --> RDS[("RDS / Aurora<br/>+ RDS Proxy")]
+    </pre>
+  </div>
+
+  <table>
+    <tr><th>Module</th><th>Lambda?</th><th>What changes</th></tr>
+    <tr><td><code>api-gateway</code> (Spring Cloud)</td><td><span class="tag avoid">Drop</span></td><td>Replaced by <strong>Amazon API Gateway</strong> route table</td></tr>
+    <tr><td><code>intake-service</code> HTTP</td><td><span class="tag lambda">Lambda</span></td><td>Rewrite as function (or Spring Cloud Function); no embedded Tomcat</td></tr>
+    <tr><td><code>order-service</code> HTTP + Kafka publish</td><td><span class="tag hybrid">Hybrid</span></td><td>HTTP → Lambda; after-commit publish → SQS/EventBridge instead of Kafka</td></tr>
+    <tr><td><code>admin-bff</code> reads</td><td><span class="tag lambda">Lambda</span></td><td>Good fit — short request/response</td></tr>
+    <tr><td>Catalog scrape</td><td><span class="tag lambda">Lambda</span></td><td>Best Lambda fit — EventBridge cron Sunday 03:00</td></tr>
+    <tr><td><code>allocation</code> / <code>delivery</code> Kafka listeners</td><td><span class="tag avoid">Not as-is</span></td><td>Must become SQS/EventBridge triggers — redesign event backbone</td></tr>
+    <tr><td><code>notification-service</code></td><td><span class="tag lambda">Lambda</span></td><td>If fed by SQS; lose always-on consumer</td></tr>
+    <tr><td><code>image-analysis-service</code></td><td><span class="tag hybrid">Maybe</span></td><td>Timeouts/cold starts hurt; often Step Functions + Lambda or keep Fargate</td></tr>
+    <tr><td>H2 databases</td><td><span class="tag avoid">Gone</span></td><td>RDS + RDS Proxy mandatory</td></tr>
+    <tr><td>Kafka / MSK consumers</td><td><span class="tag avoid">Awkward</span></td><td>Either replace Kafka or keep a small always-on consumer fleet</td></tr>
+  </table>
+
+  <div class="card">
+    <h3>Why pure Lambda fights this codebase</h3>
+    <ul>
+      <li>Half your design is <strong>Kafka + after-commit publish + idempotent consumers</strong> — that assumes processes that stay up.</li>
+      <li>8 Spring Boot apps ≠ 8 Lambdas without rewriting packaging, startup, and messaging.</li>
+      <li>Cold starts + JPA + many micro-hops can be slower and more expensive than a few Fargate tasks at low traffic.</li>
+    </ul>
+  </div>
+
+  <h2>4. Option C — Hybrid (often the smart move)</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  subgraph lambda_zone [Lambda — good fits]
+    SCRAPE["catalog scrape<br/>weekly"]
+    READS["admin-bff reads"]
+    NOTIFY["notification send"]
+  end
+  subgraph fargate_zone [Fargate — keep as services]
+    CORE["order + intake + allocation<br/>+ delivery + gateway"]
+    IMG["image-analysis"]
+    KAFKA["MSK / Kafka"]
+  end
+  WEB["web-app"] --> APIGW["API Gateway / ALB"]
+  APIGW --> READS
+  APIGW --> CORE
+  CORE --> KAFKA
+  KAFKA --> IMG
+  KAFKA --> NOTIFY
+  CRON["EventBridge"] --> SCRAPE
+    </pre>
+  </div>
+  <p><strong>Rule of thumb for this repo:</strong> put <em>request/response</em> and <em>scheduled</em> work on Lambda; keep <em>event consumers</em> and heavy Spring services on Fargate until you replace Kafka.</p>
+
+  <h2>5. Side-by-side verdict</h2>
+  <table>
+    <tr><th></th><th>Fargate</th><th>Lambda-first</th></tr>
+    <tr><td>Match to current code</td><td>High</td><td>Low</td></tr>
+    <tr><td>Rewrite effort</td><td>Weeks</td><td>Months</td></tr>
+    <tr><td>Kafka + shared DB</td><td>Keeps working</td><td>Must redesign messaging</td></tr>
+    <tr><td>Catalog weekly scrape</td><td>OK (cron → HTTP)</td><td>Natural fit</td></tr>
+    <tr><td>Cost when idle</td><td>Pay for tasks 24/7 (can scale to 0 carefully)</td><td>Near zero when idle</td></tr>
+    <tr><td>Recommended for OMS now</td><td><strong>Yes — primary path</strong></td><td>Only for scrape + a few APIs later</td></tr>
+  </table>
+
+  <h2>6. If you pick one next step</h2>
+  <ol>
+    <li><strong>Deploy path:</strong> Dockerize the 8 services → Fargate + one shared RDS <code>oms</code> + MSK Serverless or Kafka on ECS.</li>
+    <li><strong>Lambda experiment:</strong> only move <code>POST /api/catalog/scrape</code> to a scheduled Lambda writing to S3 — prove the pattern without touching Kafka.</li>
+    <li><strong>Do not</strong> try to lift Spring Cloud Gateway + all Kafka consumers onto Lambda in one go.</li>
+  </ol>
+
+  <footer>
+    Related: <a href="design.html">design.html</a> ·
+    <a href="architecture-guide.html">architecture-guide.html</a> ·
+    <a href="data-dictionary.html">data-dictionary.html</a>
+  </footer>
+</main>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark",
+    themeVariables: {
+      primaryColor: "#1d2435",
+      primaryTextColor: "#e6e9ef",
+      lineColor: "#6ea8fe",
+      fontSize: "13px"
+    }
+  });
+</script>
+</body>
+</html>

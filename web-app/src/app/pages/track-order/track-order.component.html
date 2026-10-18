@@ -1,0 +1,102 @@
+<section class="panel">
+  <header>
+    <h2>Track your order</h2>
+    <p class="muted">See status, what you ordered, and how much to pay.</p>
+  </header>
+
+  <form class="lookup" (submit)="$event.preventDefault(); lookup()">
+    <label>
+      Order number
+      <input [(ngModel)]="orderId" name="orderId" placeholder="Paste your order number" />
+    </label>
+    <button type="submit" [disabled]="loading()">{{ loading() ? 'Checking…' : 'Track order' }}</button>
+  </form>
+
+  @if (error()) {
+    <p class="err">{{ error() }}</p>
+  }
+
+  @if (order(); as o) {
+    <article class="card">
+      <div class="summary">
+        <div>
+          <h3>{{ statusTitle(o.orderStatus) }}</h3>
+          <p class="muted">Hi {{ o.customerName || 'there' }} · Order #{{ o.orderId }}</p>
+          @if (o.phone || o.email || o.address) {
+            <p class="muted">
+              @if (o.phone) { <span>Phone {{ o.phone }}</span> }
+              @if (o.email) { <span> · {{ o.email }}</span> }
+              @if (o.address) { <span> · {{ o.address }}</span> }
+            </p>
+          }
+        </div>
+        <div class="pay">
+          <span>Amount to pay</span>
+          <strong>{{ rand(o.orderTotal) }}</strong>
+        </div>
+      </div>
+
+      <p class="help">{{ statusHelp(o.orderStatus) }}</p>
+
+      <div class="steps">
+        <div class="step" [class.on]="stepOn(o.orderStatus, 'Created')">
+          <b>1</b>
+          <div>
+            <strong>Received</strong>
+            <span>We got your order</span>
+          </div>
+        </div>
+        <div class="step" [class.on]="stepOn(o.orderStatus, 'Allocated')">
+          <b>2</b>
+          <div>
+            <strong>Buying / packing</strong>
+            <span>Items purchased for you</span>
+          </div>
+        </div>
+        <div class="step" [class.on]="stepOn(o.orderStatus, 'Delivered_To_Customer')">
+          <b>3</b>
+          <div>
+            <strong>Delivered</strong>
+            <span>At your door</span>
+          </div>
+        </div>
+      </div>
+
+      <h4>Your items</h4>
+      <div class="lines">
+        @for (line of o.lines; track line.orderLineId) {
+          <div class="line">
+            <div class="thumb" [class.empty]="!line.imageUrl">
+              @if (line.imageUrl) {
+                <img [src]="line.imageUrl" [alt]="line.productName || 'Product'" />
+              } @else {
+                <span>No photo</span>
+              }
+            </div>
+            <div>
+              <strong>{{ line.productName || 'Product' }}</strong>
+              @if (line.storeName) {
+                <div class="store">{{ line.storeName }}</div>
+              }
+              <div class="nums">
+                Qty {{ line.requestedQty }}
+                @if (line.productSize) { · Size {{ line.productSize }} }
+                · {{ rand(line.unitPrice) }} each · {{ rand(line.lineTotal) }}
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="total-row">
+        <span>Order total</span>
+        <strong>{{ rand(o.orderTotal) }}</strong>
+      </div>
+    </article>
+  }
+
+  <p class="muted foot">
+    Just placed an order? Use the order number from your receipt.
+    <a routerLink="/orders/new">Back to cart</a>
+  </p>
+</section>

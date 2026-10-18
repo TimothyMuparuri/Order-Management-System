@@ -1,0 +1,180 @@
+<section class="stores-hero">
+  <div class="wrap">
+    <p class="crumb"><a routerLink="/">Home</a> · Stores</p>
+    <h1>All stores</h1>
+    <p class="lead">
+      Browse {{ stores().length }} South African stores in one place. Search by category, then add products to your
+      order — we buy and deliver.
+    </p>
+  </div>
+</section>
+
+<!-- Category search bar -->
+<div class="cat-bar" role="navigation" aria-label="Search categories">
+  <div class="wrap cat-bar-inner">
+    <div class="cat-scroll">
+      @for (c of searchCategories; track c.id) {
+        <button
+          type="button"
+          class="cat-btn"
+          [class.active]="searchCategory() === c.id"
+          (click)="setSearchCategory(c.id)"
+        >
+          {{ c.label }}
+        </button>
+      }
+    </div>
+    <form class="cat-search" (submit)="searchProducts($event)">
+      <span aria-hidden="true">⌕</span>
+      <input
+        [(ngModel)]="productQuery"
+        name="productQuery"
+        [placeholder]="searchPlaceholder()"
+        aria-label="Search products by category"
+      />
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+
+<!-- Live product results for this category -->
+@if (productQuery.trim() || liveLoading() || liveResults().length) {
+  <section class="block" id="store-results">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>
+            @if (searchCategory() !== 'all') {
+              {{ categoryLabel() }} results
+            } @else {
+              Product results
+            }
+          </h2>
+          <p>
+            @if (liveNote()) {
+              {{ liveNote() }}
+            } @else {
+              Live previews from partner stores.
+            }
+          </p>
+        </div>
+        <button type="button" class="link-more" (click)="clearProductSearch()">Clear</button>
+      </div>
+
+      @if (liveLoading()) {
+        <p class="live-status">Looking across stores…</p>
+      }
+
+      <div class="deals">
+        @for (item of liveResults(); track item.id || item.url) {
+          <article class="deal">
+            <div class="ph deal-img" [class.has-photo]="!!item.imageUrl">
+              @if (item.imageUrl) {
+                <img class="ph-photo" [src]="item.imageUrl!" [alt]="item.name" (error)="$any($event.target).style.display='none'" />
+              }
+              <button type="button" class="deal-img-link" (click)="addLiveResult(item)" [title]="'Order ' + item.name">
+                @if (!item.imageUrl) {
+                  {{ item.category || item.store }}
+                }
+              </button>
+              <span class="badge-off">{{ item.source === 'live' ? 'Live' : 'Catalog' }}</span>
+              <button type="button" class="btn btn-primary add" (click)="addLiveResult(item)">Add to order</button>
+            </div>
+            <div class="store">{{ item.store }}</div>
+            <button type="button" class="name linkish" (click)="addLiveResult(item)">{{ item.name }}</button>
+            <div class="price">
+              @if (item.price != null) {
+                <b>{{ rand(item.price) }}</b>
+                @if (item.was) {
+                  <s>{{ rand(item.was) }}</s>
+                }
+              } @else {
+                <b class="price-tba">Price on request</b>
+              }
+            </div>
+          </article>
+        } @empty {
+          @if (!liveLoading() && productQuery.trim()) {
+            <p class="empty-search">No products found. Try another category or browse stores below.</p>
+          }
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<!-- Full store directory -->
+<section class="block directory">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Store directory</h2>
+        <p>{{ visibleStores().length }} stores · filter by category or name</p>
+      </div>
+      <form class="store-filter" (submit)="$event.preventDefault(); filterStores()">
+        <input
+          [(ngModel)]="storeFilter"
+          name="storeFilter"
+          (ngModelChange)="filterStores()"
+          placeholder="Filter stores…"
+          aria-label="Filter stores by name"
+        />
+      </form>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Store categories">
+      @for (t of storeTabs; track t) {
+        <button
+          type="button"
+          class="tab"
+          role="tab"
+          [class.active]="storeTab() === t"
+          [attr.aria-selected]="storeTab() === t"
+          (click)="setStoreTab(t)"
+        >
+          {{ t }}
+          <span class="count">{{ counts()[t] || 0 }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="stores">
+      @for (s of visibleStores(); track s.id || s.name) {
+        <article class="store-card">
+          <a class="cover-link" [href]="s.url" target="_blank" rel="noopener" [attr.aria-label]="'Visit ' + s.name">
+            <div
+              class="ph cover"
+              [class.has-photo]="!!s.imageUrl"
+              [style.background-image]="s.imageUrl ? 'url(' + s.imageUrl + ')' : null"
+            >
+              @if (!s.imageUrl) {
+                {{ s.category }}
+              }
+            </div>
+          </a>
+          <div class="body">
+            <div class="store-logo">{{ initials(s) }}</div>
+            <div class="store-top">
+              <h3>{{ s.name }}</h3>
+              <span class="cat-tag">{{ s.category }}</span>
+            </div>
+            <div class="meta">{{ s.meta }}</div>
+            <div class="foot">
+              @if (s.sale) {
+                <span class="pill-sale">{{ s.sale }}</span>
+              } @else {
+                <span class="meta">Partner store</span>
+              }
+              <div class="store-actions">
+                <button type="button" class="link-action" (click)="searchStore(s)">Search here</button>
+                <a class="shop" [href]="s.url" target="_blank" rel="noopener">Visit ↗</a>
+              </div>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="empty-search">No stores match that filter.</p>
+      }
+    </div>
+  </div>
+</section>

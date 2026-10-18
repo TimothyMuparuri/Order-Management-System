@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMS — Pathways, files &amp; how to test</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171d2b; --ink: #e6e9ef; --muted: #9aa4b8;
+    --line: #2a3346; --accent: #6ea8fe; --ok: #7ee0c3; --warn: #ffcf7a; --code: #0b0f18;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 22px 16px;
+  }
+  nav .brand { font-weight: 700; margin-bottom: 14px; }
+  nav .brand span { color: var(--accent); }
+  nav h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+  nav a { display: block; color: var(--ink); text-decoration: none; padding: 5px 10px; border-radius: 7px; font-size: 13.5px; }
+  nav a:hover { background: #243049; color: var(--accent); }
+  main { padding: 36px 44px 100px; max-width: 920px; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  h2 { font-size: 22px; margin: 36px 0 12px; color: #fff; border-top: 1px solid var(--line); padding-top: 28px; }
+  h3 { font-size: 16px; margin: 18px 0 8px; color: var(--ok); }
+  .muted { color: var(--muted); }
+  .pill {
+    display: inline-block; background: #243049; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 10px; font-size: 12px; margin: 0 4px 4px 0;
+  }
+  .flow {
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 10px; padding: 12px 14px; margin: 10px 0 14px; font-size: 14px;
+  }
+  .files { background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 8px 0 14px; }
+  .files code { display: block; font: 12.5px/1.55 Consolas, Monaco, monospace; color: var(--ok); padding: 1px 0; }
+  pre {
+    background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px; overflow-x: auto; font: 12.5px/1.5 Consolas, Monaco, monospace; color: #cdd6e6;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); background: #1d2435; }
+  .note { background: rgba(255,207,122,.08); border: 1px solid rgba(255,207,122,.3); border-radius: 10px; padding: 12px 14px; color: var(--warn); font-size: 13.5px; margin: 12px 0; }
+  ol.steps { padding-left: 1.2em; }
+  ol.steps li { margin: 6px 0; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav { position: static; height: auto; } main { padding: 24px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="brand">sa<span>personalshopper</span> · Pathways</div>
+  <h2>Prep</h2>
+  <a href="#prep">What must be running</a>
+  <h2>HTTP pathways</h2>
+  <a href="#p1">1. Homepage + catalog</a>
+  <a href="#p2">2. Customer order (text)</a>
+  <a href="#p3">3. Customer order (image)</a>
+  <a href="#p4">4. Admin list / detail</a>
+  <a href="#p5">5. Bulk + allocate</a>
+  <a href="#p6">6. Mark delivered</a>
+  <a href="#p7">7. Track order</a>
+  <h2>Event pathways</h2>
+  <a href="#e1">Kafka map</a>
+  <a href="#checklist">Full E2E checklist</a>
+</nav>
+<main>
+<header>
+  <h1>Pathways, files &amp; how to test</h1>
+  <p class="muted">Every user/API path through this codebase, the files it hits, and how to verify it locally.</p>
+</header>
+
+<section id="prep">
+  <h2>Prep — what must be running</h2>
+  <table>
+    <tr><th>Piece</th><th>Port</th><th>How you start it</th></tr>
+    <tr><td>Kafka</td><td>9092</td><td><code>docker compose up -d kafka</code> (or full compose)</td></tr>
+    <tr><td>api-gateway</td><td><b>8090</b></td><td><code>$env:SERVER_PORT=8090; mvn -pl api-gateway spring-boot:run</code></td></tr>
+    <tr><td>order-service</td><td>8081</td><td><code>mvn -pl order-service spring-boot:run</code></td></tr>
+    <tr><td>intake-service</td><td>8082</td><td><code>mvn -pl intake-service spring-boot:run</code></td></tr>
+    <tr><td>admin-bff (+ catalog)</td><td>8083</td><td><code>mvn -pl admin-bff-service spring-boot:run</code></td></tr>
+    <tr><td>allocation-service</td><td>8084</td><td><code>mvn -pl allocation-service spring-boot:run</code></td></tr>
+    <tr><td>delivery-service</td><td>8085</td><td><code>mvn -pl delivery-service spring-boot:run</code></td></tr>
+    <tr><td>notification-service</td><td>8086</td><td><code>mvn -pl notification-service spring-boot:run</code></td></tr>
+    <tr><td>image-analysis-service</td><td>8087</td><td><code>mvn -pl image-analysis-service spring-boot:run</code></td></tr>
+    <tr><td>web-app</td><td>4200 / 1328…</td><td><code>cd web-app; npm start</code></td></tr>
+  </table>
+  <div class="note">
+    Frontend base URL is <code>web-app/src/environments/environment.ts</code> → <code>http://localhost:8090</code>.
+    Health check any service: <code>GET http://localhost:&lt;port&gt;/actuator/health</code>
+  </div>
+  <pre># Quick health sweep (PowerShell)
+8090,8081,8082,8083,8084,8085,8086,8087 | ForEach-Object {
+  try { "$_ " + (Invoke-RestMethod http://localhost:$_/actuator/health).status }
+  catch { "$_ DOWN" }
+}</pre>
+</section>
+
+<!-- ========== P1 ========== -->
+<section id="p1">
+  <h2>1. Homepage + catalog photos</h2>
+  <div class="flow">
+    Browser → gateway <b>:8090</b> → admin-bff <b>:8083</b> → (optional) scrape store websites → images on disk
+  </div>
+  <h3>Path</h3>
+  <ol class="steps">
+    <li>Open <code>/</code> (HomeComponent)</li>
+    <li><code>GET /api/catalog/deals</code> and <code>GET /api/catalog/stores</code></li>
+    <li>If images missing → <code>POST /api/catalog/scrape</code> (background)</li>
+    <li>Images served as <code>GET /api/catalog/images/deal/{id}</code></li>
+  </ol>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/src/app/pages/home/home.component.ts</code>
+    <code>web-app/src/app/core/catalog.service.ts</code>
+    <code>web-app/src/environments/environment.ts</code>
+    <code>api-gateway/.../application.yml</code> <span class="muted">(route /api/catalog/**)</span>
+    <code>admin-bff-service/.../catalog/CatalogController.java</code>
+    <code>admin-bff-service/.../catalog/CatalogService.java</code>
+    <code>admin-bff-service/.../catalog/ProductPageScraper.java</code>
+    <code>admin-bff-service/.../catalog/CatalogScrapeScheduler.java</code>
+    <code>admin-bff-service/src/main/resources/catalog-seed.json</code>
+    <code>admin-bff-service/data/catalog-images/</code>
+  </div>
+  <h3>How to test</h3>
+  <pre># List deals
+Invoke-RestMethod http://localhost:8090/api/catalog/deals | ConvertTo-Json -Depth 4
+
+# Force scrape (takes a few minutes)
+Invoke-RestMethod http://localhost:8090/api/catalog/scrape -Method POST
+
+# Open a deal image in browser (use an id that has scrapeStatus OK)
+# http://localhost:8090/api/catalog/images/deal/sm-cameos-tan</pre>
+  <p><span class="pill">UI</span> Open homepage → deal cards should show photos when scrapeStatus is OK.</p>
+</section>
+
+<!-- ========== P2 ========== -->
+<section id="p2">
+  <h2>2. Customer submits order (search term)</h2>
+  <div class="flow">
+    UI <code>/orders/new</code> → gateway → <b>intake</b> → HTTP create on <b>order</b> → after commit → Kafka
+    <code>oms.orders.created</code> → <b>delivery</b> (status Created) + <b>allocation</b> (ceilings)
+  </div>
+  <h3>Path</h3>
+  <ol class="steps">
+    <li><code>POST /api/orders</code> { customerId, lines: [{ searchTerm, quantity }] }</li>
+    <li>Intake validates → calls order-service <code>POST /api/internal/orders</code></li>
+    <li>Order saved in shared <code>oms</code> DB (H2 file or Postgres)</li>
+    <li>After commit, publishes to Kafka → delivery &amp; allocation listeners</li>
+  </ol>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/src/app/pages/customer-order/customer-order.component.ts</code>
+    <code>web-app/src/app/core/api.service.ts</code> <span class="muted">(submitOrder)</span>
+    <code>api-gateway/.../application.yml</code> <span class="muted">(Path=/api/orders → intake)</span>
+    <code>intake-service/.../api/IntakeController.java</code>
+    <code>intake-service/.../service/IntakeApplicationService.java</code>
+    <code>order-service/.../api/OrderController.java</code>
+    <code>order-service/.../service/OrderApplicationService.java</code>
+    <code>oms-eventing/.../Topics.java</code>
+    <code>oms-eventing/.../publish/DomainEventPublisher.java</code> <span class="muted">(after-commit Kafka publish)</span>
+    <code>delivery-service/.../DeliveryApplicationService.java</code> <span class="muted">(@KafkaListener ORDERS_CREATED)</span>
+    <code>allocation-service/.../messaging/OrderCreatedListener.java</code>
+  </div>
+  <h3>How to test</h3>
+  <pre>$body = @{
+  customerId = "customer-demo-1"
+  lines = @(@{ searchTerm = "wireless mouse"; quantity = 2 })
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod http://localhost:8090/api/orders -Method POST -ContentType "application/json" -Body $body
+
+# Then list via admin
+Invoke-RestMethod http://localhost:8090/api/admin/orders</pre>
+  <p><span class="pill">UI</span> Customer page → enter search term + qty → Submit → see order id. Admin page → order appears as <b>Created</b>.</p>
+  <p><span class="pill">Logs</span> Watch delivery-service for Kafka consume of <code>oms.orders.created</code>.</p>
+</section>
+
+<!-- ========== P3 ========== -->
+<section id="p3">
+  <h2>3. Customer order with image upload</h2>
+  <div class="flow">
+    Upload file → intake stores file + publishes <code>ImageUploaded</code> → Kafka →
+    <b>image-analysis</b> → publishes <code>ImageMatchSuggested</code> → UI confirms item → then same as pathway 2
+  </div>
+  <h3>Path</h3>
+  <ol class="steps">
+    <li><code>POST /api/images</code> multipart file</li>
+    <li>Intake saves object + publishes <code>oms.images.uploaded</code></li>
+    <li>image-analysis consumes → stub VisionProvider → <code>oms.images.match-suggested</code></li>
+    <li>UI picks a candidate <code>itemRef</code>, then <code>POST /api/orders</code> with imageId/itemRef</li>
+  </ol>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/.../customer-order.component.ts</code> <span class="muted">(onImageSelected, confirmMatch)</span>
+    <code>intake-service/.../IntakeController.java</code> <span class="muted">(POST /images)</span>
+    <code>intake-service/.../IntakeApplicationService.java</code>
+    <code>intake-service/.../storage/LocalObjectStorage.java</code>
+    <code>image-analysis-service/.../ImageAnalysisService.java</code>
+    <code>docs/event-wiring.md</code>
+  </div>
+  <h3>How to test</h3>
+  <pre># Upload a small JPEG/PNG
+$form = @{ file = Get-Item ".\some-photo.jpg" }
+Invoke-RestMethod http://localhost:8090/api/images -Method POST -Form $form
+
+# Check image-analysis logs for ImageUploaded consume
+# Then submit order with returned imageId (or use UI)</pre>
+  <p><span class="pill">UI</span> Customer page → choose file → wait for candidates → click one → Submit.</p>
+</section>
+
+<!-- ========== P4 ========== -->
+<section id="p4">
+  <h2>4. Admin list / detail / status</h2>
+  <div class="flow">
+    Admin UI → gateway → <b>admin-bff</b> → RestClient → <b>order-service</b>
+  </div>
+  <h3>Endpoints</h3>
+  <ul>
+    <li><code>GET /api/admin/orders</code></li>
+    <li><code>GET /api/admin/orders/{id}</code></li>
+    <li><code>PUT /api/admin/orders/{id}/status</code></li>
+  </ul>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/src/app/pages/admin/admin.component.ts</code>
+    <code>web-app/src/app/core/api.service.ts</code>
+    <code>admin-bff-service/.../api/AdminBffController.java</code>
+    <code>admin-bff-service/.../service/AdminBffService.java</code>
+    <code>admin-bff-service/.../config/CacheConfig.java</code>
+    <code>order-service/.../api/OrderController.java</code>
+  </div>
+  <h3>How to test</h3>
+  <pre>Invoke-RestMethod http://localhost:8090/api/admin/orders
+Invoke-RestMethod http://localhost:8090/api/admin/orders/&lt;ORDER_ID&gt;</pre>
+  <p><span class="pill">UI</span> Open <code>/admin</code> → list loads. Open an order → detail loads.</p>
+</section>
+
+<!-- ========== P5 ========== -->
+<section id="p5">
+  <h2>5. Bulk purchase → receive → allocate</h2>
+  <div class="flow">
+    Admin UI → gateway → admin-bff → <b>allocation-service</b> → when fully allocated →
+    Kafka <code>oms.orders.fully-allocated</code> → <b>delivery</b> status → Allocated
+  </div>
+  <h3>Endpoints</h3>
+  <ul>
+    <li><code>POST /api/admin/bulk-purchases</code></li>
+    <li><code>POST /api/admin/bulk-lines/{id}/received</code></li>
+    <li><code>POST /api/admin/allocations</code></li>
+  </ul>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/.../admin.component.ts</code>
+    <code>admin-bff-service/.../AdminBffService.java</code> <span class="muted">(proxies to :8084)</span>
+    <code>allocation-service/.../api/AllocationController.java</code>
+    <code>allocation-service/.../service/AllocationApplicationService.java</code>
+    <code>delivery-service/.../DeliveryApplicationService.java</code> <span class="muted">(FULLY_ALLOCATED listener)</span>
+  </div>
+  <h3>How to test</h3>
+  <ol class="steps">
+    <li>Create an order first (pathway 2) and note <code>orderId</code> / order line id from admin detail.</li>
+    <li>Record a bulk purchase for the same item / quantity.</li>
+    <li>Mark bulk line received.</li>
+    <li>Create allocation from bulk line → order line.</li>
+    <li>When all lines full → order status becomes <b>Allocated</b>.</li>
+  </ol>
+  <pre># Shape depends on AdminBffService body — use Admin UI forms if unsure
+# After allocate, check:
+Invoke-RestMethod http://localhost:8090/api/admin/orders/&lt;ORDER_ID&gt;</pre>
+  <p><span class="pill">UI</span> Prefer Admin page forms for bulk / receive / allocate (they send the correct JSON).</p>
+</section>
+
+<!-- ========== P6 ========== -->
+<section id="p6">
+  <h2>6. Mark delivered → notify customer</h2>
+  <div class="flow">
+    Admin → gateway → admin-bff → <b>delivery-service</b> → status Delivered_To_Customer +
+    publish <code>NotificationRequested</code> → Kafka → <b>notification-service</b>
+  </div>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/.../api.service.ts</code> <span class="muted">(markDelivered)</span>
+    <code>admin-bff-service/.../AdminBffController.java</code> <span class="muted">(POST .../delivered)</span>
+    <code>delivery-service/.../api/DeliveryController.java</code>
+    <code>delivery-service/.../DeliveryApplicationService.java</code>
+    <code>notification-service/.../NotificationApplicationService.java</code>
+  </div>
+  <h3>How to test</h3>
+  <pre># Order must already be Allocated
+Invoke-RestMethod http://localhost:8090/api/admin/orders/&lt;ORDER_ID&gt;/delivered -Method POST
+
+# Check delivery transitions
+Invoke-RestMethod http://localhost:8090/api/orders/&lt;ORDER_ID&gt;/transitions
+
+# Watch notification-service logs for NotificationRequested</pre>
+  <p><span class="pill">UI</span> Admin → deliver action on an Allocated order.</p>
+</section>
+
+<!-- ========== P7 ========== -->
+<section id="p7">
+  <h2>7. Track order (homepage)</h2>
+  <div class="flow">
+    Homepage “Track” box → <code>GET /api/admin/orders/{id}</code> → shows status text
+  </div>
+  <h3>Files</h3>
+  <div class="files">
+    <code>web-app/src/app/pages/home/home.component.ts</code> <span class="muted">(track())</span>
+    <code>web-app/src/app/core/api.service.ts</code> <span class="muted">(getOrder)</span>
+    <code>admin-bff-service/.../AdminBffController.java</code>
+  </div>
+  <h3>How to test</h3>
+  <p><span class="pill">UI</span> Homepage → Track section → paste a real order id → expect status string.</p>
+  <pre>Invoke-RestMethod http://localhost:8090/api/admin/orders/&lt;ORDER_ID&gt;</pre>
+</section>
+
+<!-- ========== Events ========== -->
+<section id="e1">
+  <h2>Kafka event map (async pathways)</h2>
+  <table>
+    <tr><th>Topic</th><th>Producer file</th><th>Consumer file(s)</th><th>Effect</th></tr>
+    <tr>
+      <td><code>oms.orders.created</code></td>
+      <td><code>order-service/.../OrderApplicationService.java</code></td>
+      <td><code>delivery-service/.../DeliveryApplicationService.java</code><br/><code>allocation-service/.../OrderCreatedListener.java</code></td>
+      <td>Created + allocation ceilings</td>
+    </tr>
+    <tr>
+      <td><code>oms.orders.fully-allocated</code></td>
+      <td><code>allocation-service/.../AllocationApplicationService.java</code></td>
+      <td><code>delivery-service/.../DeliveryApplicationService.java</code></td>
+      <td>Created → Allocated</td>
+    </tr>
+    <tr>
+      <td><code>oms.notifications.requested</code></td>
+      <td><code>delivery-service/.../DeliveryApplicationService.java</code></td>
+      <td><code>notification-service/.../NotificationApplicationService.java</code></td>
+      <td>Send notification (retry ≤ 3)</td>
+    </tr>
+    <tr>
+      <td><code>oms.images.uploaded</code></td>
+      <td><code>intake-service/.../IntakeApplicationService.java</code></td>
+      <td><code>image-analysis-service/.../ImageAnalysisService.java</code></td>
+      <td>Run vision stub</td>
+    </tr>
+    <tr>
+      <td><code>oms.images.match-suggested</code></td>
+      <td><code>image-analysis-service/.../ImageAnalysisService.java</code></td>
+      <td>UI / intake confirmation</td>
+      <td>Candidates for confirm</td>
+    </tr>
+  </table>
+  <p class="muted">Shared plumbing: <code>oms-eventing</code> (after-commit Kafka publish, <code>processed_event</code> dedupe), topics in <code>oms-eventing/.../Topics.java</code>. Full table: <code>docs/event-wiring.md</code>. All services share one <code>oms</code> database.</p>
+  <h3>How to test events</h3>
+  <ul>
+    <li>Do the HTTP action that produces the event.</li>
+    <li>Watch the <strong>consumer</strong> service log for the listener.</li>
+    <li>Confirm side effect (status change, notification log, image candidates).</li>
+    <li>Kafka must be up on <code>localhost:9092</code> or listeners hang/fail.</li>
+  </ul>
+</section>
+
+<section id="checklist">
+  <h2>Full E2E checklist (happy path)</h2>
+  <ol class="steps">
+    <li>Health sweep — all ports UP + Kafka 9092.</li>
+    <li><b>Catalog:</b> homepage loads deals; optional scrape; some images appear.</li>
+    <li><b>Order:</b> submit text order → admin shows Created.</li>
+    <li><b>Allocate:</b> bulk → receive → allocate → status Allocated.</li>
+    <li><b>Deliver:</b> mark delivered → status Delivered_To_Customer.</li>
+    <li><b>Notify:</b> notification-service log shows send attempt.</li>
+    <li><b>Track:</b> homepage track with that order id works.</li>
+    <li><b>Image path (optional):</b> upload photo → candidates → confirm → submit.</li>
+  </ol>
+  <div class="note">
+    Gateway route order matters: <code>/api/orders</code> (exact) goes to <b>intake</b>;
+    <code>/api/orders/**</code> goes to <b>order-service</b>;
+    <code>/api/orders/*/delivered</code> goes to <b>delivery</b>.
+    Config: <code>api-gateway/src/main/resources/application.yml</code>.
+  </div>
+  <p class="muted">Also see <a href="architecture-guide.html" style="color:#6ea8fe">architecture-guide.html</a> ·
+  <a href="docs/event-wiring.md" style="color:#6ea8fe">docs/event-wiring.md</a> ·
+  <a href="architecture-lambda-vs-fargate.html" style="color:#6ea8fe">Lambda vs Fargate</a></p>
+</section>
+</main>
+</div>
+</body>
+</html>
