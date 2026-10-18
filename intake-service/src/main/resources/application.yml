@@ -1,13 +1,13 @@
-server:
+﻿server:
   port: 8082
 spring:
   application:
     name: intake-service
   datasource:
-    # Local pgAdmin PostgreSQL 17 — database: order-ms (override with OMS_DB_* env vars)
+    # Local pgAdmin PostgreSQL 17 â€” database: order-ms (override with OMS_DB_* env vars)
     url: "${OMS_DB_URL:jdbc:postgresql://localhost:5432/order-ms}"
     username: ${OMS_DB_USER:postgres}
-    password: ${OMS_DB_PASSWORD:Sizor.kom21}
+    password: ${OMS_DB_PASSWORD:}
     driver-class-name: ${OMS_DB_DRIVER:org.postgresql.Driver}
   jpa:
     hibernate:
